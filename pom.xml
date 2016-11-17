@@ -12,6 +12,7 @@
 	<properties>
 		<org.springframework.version>4.3.3.RELEASE</org.springframework.version>
 		<org.powermock.version>1.4.10</org.powermock.version>
+		<mockito.version>1.9.5</mockito.version>
 		<org.drools.version>6.2.0.CR2</org.drools.version>
 		<org.apache.shiro.version>1.2.3</org.apache.shiro.version>
 		<jasper.version>6.0.0</jasper.version>
@@ -239,6 +240,12 @@
 			<groupId>net.sf.supercsv</groupId>
 			<artifactId>super-csv-dozer</artifactId>
 			<version>${net.sf.supercsv.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>${mockito.version}</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>

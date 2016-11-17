@@ -1,5 +1,7 @@
 package org.hni.events.service;
 
+import org.hni.events.service.om.Event;
+
 /**
  * Created by walmart on 11/14/16.
  * Handles events coming in to HNI.
@@ -8,5 +10,5 @@ package org.hni.events.service;
  */
 public interface EventService {
 
-    public void handleEvent(Event event);
+    String handleEvent(Event event);
 }
