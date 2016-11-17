@@ -85,16 +85,19 @@ public class RegisterServiceUnitTest {
         event.setTextMessage("123456");
         when(sessionStateDao.get(eq(SESSION_ID))).thenReturn(state);
         String returnString = registerService.handleEvent(event);
-        Assert.assertEquals("Ok. You're all setup for yourself.", returnString);
+        Assert.assertEquals("Ok. You're all setup for yourself. If you have additional family"
+                + " members to register please enter the additional authorization"
+                + " codes now. When you need a meal just text MEAL back to this number.", returnString);
         verify(sessionStateDao, times(1)).update(any(SessionState.class));
     }
 
     @Test
-    public void testCompleteRegister() throws Exception {
-        state = new SessionState(EventName.REGISTER, SESSION_ID, PHONE_NUMBER, payload, EventState.STATE_REGISTER_COMPLETE);
+    public void testAddMoreAuthCodes() throws Exception {
+        state = new SessionState(EventName.REGISTER, SESSION_ID, PHONE_NUMBER, payload, EventState.STATE_REGISTER_MORE_AUTH_CODES);
         when(sessionStateDao.get(eq(SESSION_ID))).thenReturn(state);
         String returnString = registerService.handleEvent(event);
-        Assert.assertNull(returnString);
-        verify(sessionStateDao, times(1)).delete(eq(SESSION_ID));
+        Assert.assertEquals("We have added that authorization code to your family account. Please"
+                + " send any additional codes you need for your family.", returnString);
+        verify(sessionStateDao, never()).update(any(SessionState.class));
     }
 }

@@ -43,10 +43,36 @@ public class EventServiceFactoryUnitTest {
     }
 
     @Test
+    public void testInvalidEventAndNoActiveWorkFlow() {
+        when(sessionStateDao.get(eq(SESSION_ID))).thenReturn(state);
+        Assert.assertEquals("Unknown keyword " + event.getTextMessage(), factory.handleEvent(event));
+        verify(sessionStateDao, times(0)).insert(any(SessionState.class));
+    }
+
+    @Test
+    public void testInvalidEventWithActiveWorkFlow() {
+        state = new SessionState(EventName.REGISTER, SESSION_ID, PHONE_NUMBER);
+        when(sessionStateDao.get(eq(SESSION_ID))).thenReturn(state);
+        Assert.assertEquals(REUTRN_MESSAGE, factory.handleEvent(event));
+        verify(sessionStateDao, times(0)).insert(any(SessionState.class));
+    }
+
+    @Test
     public void testStartRegisterWorkFlow() {
         when(sessionStateDao.get(eq(SESSION_ID))).thenReturn(state);
         event.setTextMessage("SIGNUP");
         Assert.assertEquals(REUTRN_MESSAGE, factory.handleEvent(event));
+        verify(sessionStateDao, never()).delete(eq(SESSION_ID));
+        verify(sessionStateDao, times(1)).insert(any(SessionState.class));
+    }
+
+    @Test
+    public void testInterruptExistingWorkFlow() {
+        state = new SessionState(EventName.MEAL, SESSION_ID, PHONE_NUMBER);
+        when(sessionStateDao.get(eq(SESSION_ID))).thenReturn(state);
+        event.setTextMessage("SIGNUP");
+        Assert.assertEquals(REUTRN_MESSAGE, factory.handleEvent(event));
+        verify(sessionStateDao, times(1)).delete(eq(SESSION_ID));
         verify(sessionStateDao, times(1)).insert(any(SessionState.class));
     }
 

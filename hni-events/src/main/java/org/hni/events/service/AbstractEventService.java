@@ -3,7 +3,6 @@ package org.hni.events.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hni.events.service.dao.SessionStateDao;
 import org.hni.events.service.om.Event;
-import org.hni.events.service.om.EventState;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -16,7 +15,6 @@ import java.io.IOException;
  */
 public abstract class AbstractEventService<T> implements EventService {
 
-    @Inject
     protected SessionStateDao sessionStateDao;
 
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -39,5 +37,10 @@ public abstract class AbstractEventService<T> implements EventService {
         } catch (IOException ex) {
             throw new RuntimeException();
         }
+    }
+
+    @Inject
+    public void setSessionStateDao(final SessionStateDao sessionStateDao) {
+        this.sessionStateDao = sessionStateDao;
     }
 }
