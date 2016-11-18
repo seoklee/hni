@@ -20,12 +20,16 @@ public class EventServiceFactory {
     @Inject
     private RegisterService registerService;
 
+    @Inject
+    private OrderingService orderingService;
+
     private Map<EventName, EventService> eventServiceMap;
 
     @PostConstruct
     void init() {
         eventServiceMap = new HashMap<>();
         eventServiceMap.put(EventName.REGISTER, registerService);
+        eventServiceMap.put(EventName.MEAL, orderingService);
     }
 
     public String handleEvent(final Event event) {

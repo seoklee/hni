@@ -3,6 +3,8 @@ package org.hni.events.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hni.events.service.dao.SessionStateDao;
 import org.hni.events.service.om.Event;
+import org.hni.events.service.om.EventState;
+import org.hni.events.service.om.SessionState;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -19,9 +21,21 @@ public abstract class AbstractEventService<T> implements EventService {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    public abstract String handleEvent(Event event);
+    public String handleEvent(Event event) {
+        final SessionState state = sessionStateDao.get(event.getSessionId());
+        // perform the workflow logic
+        final WorkFlowStepResult stepResult = performWorkFlowStep(event, state);
 
-//    protected abstract String performRouting(EventState state, String textMessage, T object);
+        if (!state.getEventState().equals(stepResult.getNextStateCode())) {
+            final SessionState nextState =
+                    new SessionState(state.getEventName(), state.getSessionId(), state.getPhoneNumber(),
+                            stepResult.getPayload(), stepResult.getNextStateCode());
+            sessionStateDao.update(nextState);
+        }
+        return stepResult.getReturnString();
+    }
+
+    protected abstract WorkFlowStepResult performWorkFlowStep(Event event, SessionState currentState);
 
     protected T deserialize(final String payload, final Class<T> clazz) {
         try {
@@ -42,5 +56,30 @@ public abstract class AbstractEventService<T> implements EventService {
     @Inject
     public void setSessionStateDao(final SessionStateDao sessionStateDao) {
         this.sessionStateDao = sessionStateDao;
+    }
+
+    protected static class WorkFlowStepResult {
+
+        private String returnString;
+        private EventState nextStateCode;
+        private String payload;
+
+        public WorkFlowStepResult(String returnString, EventState nextStateCode, String payload) {
+            this.returnString = returnString;
+            this.nextStateCode = nextStateCode;
+            this.payload = payload;
+        }
+
+        public String getReturnString() {
+            return returnString;
+        }
+
+        public EventState getNextStateCode() {
+            return nextStateCode;
+        }
+
+        public String getPayload() {
+            return payload;
+        }
     }
 }
