@@ -21,7 +21,8 @@ public abstract class AbstractEventService<T> implements EventService {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    public String handleEvent(Event event) {
+    @Override
+    public String handleEvent(final Event event) {
         final SessionState state = sessionStateDao.get(event.getSessionId());
         // perform the workflow logic
         final WorkFlowStepResult stepResult = performWorkFlowStep(event, state);

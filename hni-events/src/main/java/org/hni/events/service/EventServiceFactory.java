@@ -4,23 +4,23 @@ import org.hni.events.service.dao.SessionStateDao;
 import org.hni.events.service.om.Event;
 import org.hni.events.service.om.EventName;
 import org.hni.events.service.om.SessionState;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 
-@Singleton
+@Component
 public class EventServiceFactory {
 
-    @Inject
+    @Autowired
     private SessionStateDao sessionStateDao;
 
-    @Inject
+    @Autowired
     private RegisterService registerService;
 
-    @Inject
+    @Autowired
     private OrderingService orderingService;
 
     private Map<EventName, EventService> eventServiceMap;

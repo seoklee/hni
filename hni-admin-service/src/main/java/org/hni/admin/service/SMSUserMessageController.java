@@ -7,6 +7,7 @@ import org.hni.events.service.om.Event;
 import org.hni.provider.om.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -22,7 +23,7 @@ import javax.ws.rs.core.MediaType;
 public class SMSUserMessageController extends AbstractBaseController {
     private static final Logger logger = LoggerFactory.getLogger(SMSUserMessageController.class);
 
-    @Inject
+    @Autowired
     private EventServiceFactory eventServiceFactory;
 
     @GET

@@ -7,16 +7,15 @@ import org.hni.order.om.Order;
 import org.hni.order.service.OrderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-@Singleton
+@Component
 public class OrderingService extends AbstractEventService<Order> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OrderingService.class);
 
-    @Inject
+    @Autowired
     private OrderService orderService;
 
     @Override
