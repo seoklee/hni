@@ -20,10 +20,11 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `registration_state` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `eventname` VARCHAR(255) NOT NULL,
-  `phoneno` VARCHAR(45) NOT NULL,
-  `payload` VARCHAR(255) NULL,
-  `eventstate` VARCHAR(255) NOT NULL,
+  `event_name` VARCHAR(255) NOT NULL,
+  `phone_number` VARCHAR(45) NOT NULL,
+  `payload` TEXT NULL,
+  `event_state` VARCHAR(255) NOT NULL,
+  UNIQUE KEY `idx_phone_number` (`phone_number`),
   PRIMARY KEY (`id`))
 ENGINE = InnoDB;
 

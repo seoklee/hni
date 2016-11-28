@@ -22,30 +22,24 @@ public class RegistrationState implements Persistable, Serializable {
     protected Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "eventname", nullable = false)
+    @Column(name = "event_name", nullable = false)
     private EventName eventName;
 
-    @Column(name = "phoneno", nullable = false)
+    @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
     @Column(name = "payload")
     private String payload;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "eventstate", nullable = false)
+    @Column(name = "event_state", nullable = false)
     private RegistrationStep registrationStep;
 
     public RegistrationState() {
     }
 
-    public RegistrationState(EventName eventName, String phoneNumber) {
-        this.eventName = eventName;
-        this.phoneNumber = phoneNumber;
-        payload = null;
-        registrationStep = RegistrationStep.getInitalState(eventName);
-    }
-
-    public RegistrationState(EventName eventName, String phoneNumber, String payload, RegistrationStep registrationStep) {
+    public RegistrationState(Long id, EventName eventName, String phoneNumber, String payload, RegistrationStep registrationStep) {
+        this.id = id;
         this.eventName = eventName;
         this.phoneNumber = phoneNumber;
         this.payload = payload;
