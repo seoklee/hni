@@ -26,10 +26,10 @@ public abstract class AbstractRegistrationService<T> implements EventService{
 
     @Override
     public String handleEvent(final Event event) {
-        RegistrationState state = registrationStateDAO.get(event.getPhoneNumber());
+        RegistrationState state = registrationStateDAO.getByPhoneNumber(event.getPhoneNumber());
         if (state == null) {
             // No state, so we're just beginning.
-            state = new RegistrationState(EventName.REGISTER, event.getPhoneNumber(),
+            state = new RegistrationState(null, EventName.REGISTER, event.getPhoneNumber(),
                     null, RegistrationStep.STATE_REGISTER_START);
             registrationStateDAO.insert(state);
         }
@@ -41,9 +41,8 @@ public abstract class AbstractRegistrationService<T> implements EventService{
 
         if (!state.getRegistrationStep().equals(stepResult.getNextStateCode())) {
             final RegistrationState nextState =
-                    new RegistrationState(state.getEventName(), state.getPhoneNumber(),
+                    new RegistrationState(state.getId(), state.getEventName(), state.getPhoneNumber(),
                             stepResult.getPayload(), stepResult.getNextStateCode());
-
             registrationStateDAO.update(nextState);
         }
         return stepResult.getReturnString();
