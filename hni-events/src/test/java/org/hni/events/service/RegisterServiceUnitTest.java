@@ -21,6 +21,7 @@ public class RegisterServiceUnitTest {
 
     private static final String PHONE_NUMBER = "8188461238";
     private static final String AUTH_CODE = "123456";
+    private static final Long REGISTRATION_STATE_ID = 1L;
 
     @InjectMocks
     private RegisterService registerService;
@@ -48,9 +49,8 @@ public class RegisterServiceUnitTest {
 
     @Test
     public void testStartRegister() throws Exception {
-
-        state = new RegistrationState(EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_START);
-        when(registrationStateDAO.get(eq(PHONE_NUMBER))).thenReturn(state);
+        state = new RegistrationState(null, EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_START);
+        when(registrationStateDAO.getByPhoneNumber(eq(PHONE_NUMBER))).thenReturn(state);
 
         String returnString = registerService.handleEvent(event);
         Assert.assertEquals(RegisterService.REPLY_WELCOME, returnString);
@@ -69,10 +69,10 @@ public class RegisterServiceUnitTest {
 
     @Test
     public void testGetFirstName() throws Exception {
-        state = new RegistrationState(EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_GET_FIRST_NAME);
+        state = new RegistrationState(REGISTRATION_STATE_ID, EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_GET_FIRST_NAME);
         event.setTextMessage("firstname");
 
-        when(registrationStateDAO.get(eq(PHONE_NUMBER))).thenReturn(state);
+        when(registrationStateDAO.getByPhoneNumber(eq(PHONE_NUMBER))).thenReturn(state);
         String returnString = registerService.handleEvent(event);
         Assert.assertEquals(String.format(RegisterService.REPLY_REQUEST_LAST_NAME, "firstname"), returnString);
         verify(registrationStateDAO, times(1)).update(any(RegistrationState.class));
@@ -80,10 +80,10 @@ public class RegisterServiceUnitTest {
 
     @Test
     public void testGetLastName() throws Exception {
-        state = new RegistrationState(EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_GET_LAST_NAME);
+        state = new RegistrationState(REGISTRATION_STATE_ID, EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_GET_LAST_NAME);
         event.setTextMessage("lastname");
 
-        when(registrationStateDAO.get(eq(PHONE_NUMBER))).thenReturn(state);
+        when(registrationStateDAO.getByPhoneNumber(eq(PHONE_NUMBER))).thenReturn(state);
         String returnString = registerService.handleEvent(event);
         Assert.assertEquals(String.format(RegisterService.REPLY_REQUEST_EMAIL, RegisterService.MSG_NONE), returnString);
         verify(registrationStateDAO, times(1)).update(any(RegistrationState.class));
@@ -91,10 +91,10 @@ public class RegisterServiceUnitTest {
 
     @Test
     public void testGetEmail() throws Exception {
-        state = new RegistrationState(EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_GET_EMAIL);
+        state = new RegistrationState(REGISTRATION_STATE_ID, EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_GET_EMAIL);
         event.setTextMessage("johndoe@gmail.com");
 
-        when(registrationStateDAO.get(eq(PHONE_NUMBER))).thenReturn(state);
+        when(registrationStateDAO.getByPhoneNumber(eq(PHONE_NUMBER))).thenReturn(state);
         String returnString = registerService.handleEvent(event);
         Assert.assertEquals(String.format(RegisterService.REPLY_EMAIL_CONFIRM, "johndoe@gmail.com"), returnString);
         verify(registrationStateDAO, times(1)).update(any(RegistrationState.class));
@@ -102,10 +102,10 @@ public class RegisterServiceUnitTest {
 
     @Test
     public void testGetNoneEmail() throws Exception {
-        state = new RegistrationState(EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_GET_EMAIL);
+        state = new RegistrationState(REGISTRATION_STATE_ID, EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_GET_EMAIL);
         event.setTextMessage("none");
 
-        when(registrationStateDAO.get(eq(PHONE_NUMBER))).thenReturn(state);
+        when(registrationStateDAO.getByPhoneNumber(eq(PHONE_NUMBER))).thenReturn(state);
         String returnString = registerService.handleEvent(event);
         Assert.assertEquals(RegisterService.REPLY_EMAIL_NONE, returnString);
         verify(registrationStateDAO, times(1)).update(any(RegistrationState.class));
@@ -113,10 +113,10 @@ public class RegisterServiceUnitTest {
 
     @Test
     public void testConfirmEmail() throws Exception {
-        state = new RegistrationState(EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_CONFIRM_EMAIL);
+        state = new RegistrationState(REGISTRATION_STATE_ID, EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_CONFIRM_EMAIL);
         event.setTextMessage("1");
 
-        when(registrationStateDAO.get(eq(PHONE_NUMBER))).thenReturn(state);
+        when(registrationStateDAO.getByPhoneNumber(eq(PHONE_NUMBER))).thenReturn(state);
         String returnString = registerService.handleEvent(event);
         Assert.assertEquals(RegisterService.REPLY_AUTHCODE_REQUEST, returnString);
         verify(registrationStateDAO, times(1)).update(any(RegistrationState.class));
@@ -124,10 +124,10 @@ public class RegisterServiceUnitTest {
 
     @Test
     public void testGetAuthCode() throws Exception {
-        state = new RegistrationState(EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_GET_AUTH_CODE);
+        state = new RegistrationState(REGISTRATION_STATE_ID, EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_GET_AUTH_CODE);
         event.setTextMessage(AUTH_CODE);
 
-        when(registrationStateDAO.get(eq(PHONE_NUMBER))).thenReturn(state);
+        when(registrationStateDAO.getByPhoneNumber(eq(PHONE_NUMBER))).thenReturn(state);
         String returnString = registerService.handleEvent(event);
         System.out.println(returnString);
         Assert.assertEquals(RegisterService.REPLY_REGISTRATION_COMPLETE + RegisterService.REPLY_AUTHCODE_ADDITIONAL, returnString);
@@ -136,10 +136,10 @@ public class RegisterServiceUnitTest {
 
     @Test
     public void testAddMoreAuthCodes() throws Exception {
-        state = new RegistrationState(EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_MORE_AUTH_CODES);
+        state = new RegistrationState(REGISTRATION_STATE_ID, EventName.REGISTER, PHONE_NUMBER, payload, RegistrationStep.STATE_REGISTER_MORE_AUTH_CODES);
         event.setTextMessage(AUTH_CODE);
 
-        when(registrationStateDAO.get(eq(PHONE_NUMBER))).thenReturn(state);
+        when(registrationStateDAO.getByPhoneNumber(eq(PHONE_NUMBER))).thenReturn(state);
         String returnString = registerService.handleEvent(event);
         Assert.assertEquals(RegisterService.REPLY_AUTHCODE_ADDED + RegisterService.REPLY_AUTHCODE_ADDITIONAL, returnString);
         verify(registrationStateDAO, never()).update(any(RegistrationState.class));

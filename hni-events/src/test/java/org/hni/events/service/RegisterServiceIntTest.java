@@ -50,7 +50,7 @@ public class RegisterServiceIntTest {
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        state = new RegistrationState(EventName.REGISTER, PHONE_NUMBER, null, RegistrationStep.STATE_REGISTER_START);
+        state = new RegistrationState(null, EventName.REGISTER, PHONE_NUMBER, null, RegistrationStep.STATE_REGISTER_START);
         registrationStateDAO.insert(state);
         when(customerService.validate(any(User.class))).thenReturn(true);
         when(activationCodeService.validate(eq(AUTH_CODE))).thenReturn(true);
@@ -63,7 +63,7 @@ public class RegisterServiceIntTest {
                 + "Information you provide will be kept private. "
                 + "Reply with PRIVACY to learn more. Let's get you registered. What's your first name?", returnString);
 
-        RegistrationState nextState = registrationStateDAO.get(PHONE_NUMBER);
+        RegistrationState nextState = registrationStateDAO.getByPhoneNumber(PHONE_NUMBER);
 
         Assert.assertEquals(PHONE_NUMBER, nextState.getPhoneNumber());
         Assert.assertEquals(EventName.REGISTER, nextState.getEventName());

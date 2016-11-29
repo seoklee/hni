@@ -27,7 +27,6 @@ import static org.mockito.Mockito.*;
 public class EventRouterIntTest {
 
     private static final String MEDIA_TYPE = "text/plain";
-    private static final String SESSION_ID = "123";
     private static final String PHONE_NUMBER = "8188461238";
     private static final String AUTH_CODE = "123456";
 
@@ -63,7 +62,7 @@ public class EventRouterIntTest {
                 + "Reply with PRIVACY to learn more. Let's get you registered. What's your first name?", returnString);
         verify(registrationStateDao, times(1)).insert(any(RegistrationState.class));
         verify(registrationStateDao, times(1)).update(any(RegistrationState.class));
-        RegistrationState nextState = registrationStateDao.get(PHONE_NUMBER);
+        RegistrationState nextState = registrationStateDao.getByPhoneNumber(PHONE_NUMBER);
         Assert.assertEquals(PHONE_NUMBER, nextState.getPhoneNumber());
         Assert.assertEquals(EventName.REGISTER, nextState.getEventName());
         Assert.assertEquals(RegistrationStep.STATE_REGISTER_GET_FIRST_NAME, nextState.getRegistrationStep());
@@ -71,12 +70,12 @@ public class EventRouterIntTest {
 
     @Test
     public void testInterruptExistingWorkFlow() {
-        registrationStateDao.insert(new RegistrationState(EventName.MEAL, PHONE_NUMBER, null, null));
+        registrationStateDao.insert(new RegistrationState( null, EventName.MEAL, PHONE_NUMBER, null, null));
         String returnString = factory.handleEvent(Event.createEvent(MEDIA_TYPE, PHONE_NUMBER, "REGISTER"));
         Assert.assertEquals("Welcome to Hunger Not Impossible! Msg & data rates may apply. "
                 + "Any information you provide here will be kept private. "
                 + "Reply with PRIVACY to learn more. Let's get you registered. What's your first name?", returnString);
-        verify(registrationStateDao, times(1)).delete(eq(PHONE_NUMBER));
+        verify(registrationStateDao, times(1)).deleteByPhoneNumber(eq(PHONE_NUMBER));
         verify(registrationStateDao, times(2)).insert(any(RegistrationState.class));
     }
 
