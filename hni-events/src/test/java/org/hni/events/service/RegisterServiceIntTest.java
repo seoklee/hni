@@ -50,7 +50,7 @@ public class RegisterServiceIntTest {
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        state = new RegistrationState(null, EventName.REGISTER, PHONE_NUMBER, null, RegistrationStep.STATE_REGISTER_START);
+        state = RegistrationState.create(EventName.REGISTER, PHONE_NUMBER, null, RegistrationStep.STATE_REGISTER_START);
         registrationStateDAO.insert(state);
         when(customerService.validate(any(User.class))).thenReturn(true);
         when(activationCodeService.validate(eq(AUTH_CODE))).thenReturn(true);

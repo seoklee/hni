@@ -70,7 +70,7 @@ public class EventRouterIntTest {
 
     @Test
     public void testInterruptExistingWorkFlow() {
-        registrationStateDao.insert(new RegistrationState( null, EventName.MEAL, PHONE_NUMBER, null, null));
+        registrationStateDao.insert(RegistrationState.create(EventName.MEAL, PHONE_NUMBER, null, null));
         String returnString = factory.handleEvent(Event.createEvent(MEDIA_TYPE, PHONE_NUMBER, "REGISTER"));
         Assert.assertEquals("Welcome to Hunger Not Impossible! Msg & data rates may apply. "
                 + "Any information you provide here will be kept private. "

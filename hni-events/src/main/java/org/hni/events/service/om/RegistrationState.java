@@ -35,15 +35,15 @@ public class RegistrationState implements Persistable, Serializable {
     @Column(name = "event_state", nullable = false)
     private RegistrationStep registrationStep;
 
-    public RegistrationState() {
-    }
+    private RegistrationState() {}
 
-    public RegistrationState(Long id, EventName eventName, String phoneNumber, String payload, RegistrationStep registrationStep) {
-        this.id = id;
-        this.eventName = eventName;
-        this.phoneNumber = phoneNumber;
-        this.payload = payload;
-        this.registrationStep = registrationStep;
+    public static RegistrationState create(EventName eventName, String phoneNumber, String payload, RegistrationStep registrationStep) {
+        RegistrationState registrationState = new RegistrationState();
+        registrationState.eventName = eventName;
+        registrationState.phoneNumber = phoneNumber;
+        registrationState.payload = payload;
+        registrationState.registrationStep = registrationStep;
+        return registrationState;
     }
 
     @Override
@@ -65,6 +65,26 @@ public class RegistrationState implements Persistable, Serializable {
 
     public String getPayload() {
         return payload;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setEventName(EventName eventName) {
+        this.eventName = eventName;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void setPayload(String payload) {
+        this.payload = payload;
+    }
+
+    public void setRegistrationStep(RegistrationStep registrationStep) {
+        this.registrationStep = registrationStep;
     }
 
     @Override

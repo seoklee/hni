@@ -63,24 +63,23 @@ public class RegisterService extends AbstractRegistrationService<User> {
     }
 
     @Override
-    protected WorkFlowStepResult performWorkFlowStep(final Event event, final RegistrationState registrationState) {
+    protected String performWorkFlowStep(final Event event, final RegistrationState registrationState) {
         final String returnString;
-        RegistrationStep nextStateCode = registrationState.getRegistrationStep();
         final User user =
                 registrationState.getPayload() != null ? deserialize(registrationState.getPayload(), User.class) : new User();
         final String textMessage = event.getTextMessage();
         switch (RegistrationStep.fromStateCode(registrationState.getRegistrationStep().getStateCode())) {
             case STATE_REGISTER_START:
                 user.setMobilePhone(event.getPhoneNumber());
-                nextStateCode = RegistrationStep.STATE_REGISTER_GET_FIRST_NAME;
-                returnString = REPLY_WELCOME; 
-                 break;
+                registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_GET_FIRST_NAME);
+                returnString = REPLY_WELCOME;
+                break;
             case STATE_REGISTER_GET_FIRST_NAME:
                 if (!textMessage.equalsIgnoreCase(MSG_PRIVACY)) {
                     user.setFirstName(textMessage);
                     // validate the first name
                     if (customerService.validate(user)) {
-                        nextStateCode = RegistrationStep.STATE_REGISTER_GET_LAST_NAME;
+                        registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_GET_LAST_NAME);
                         returnString = String.format(REPLY_REQUEST_LAST_NAME, textMessage);
                     } else {
                         returnString = REPLY_NO_UNDERSTAND + REPLY_REQUEST_FIRST_NAME;
@@ -93,7 +92,7 @@ public class RegisterService extends AbstractRegistrationService<User> {
                 user.setLastName(textMessage);
                 // validate the last name
                 if (customerService.validate(user)) {
-                    nextStateCode = RegistrationStep.STATE_REGISTER_GET_EMAIL;
+                    registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_GET_EMAIL);
                     returnString = String.format(REPLY_REQUEST_EMAIL, MSG_NONE);
                 } else {
                     returnString = REPLY_NO_UNDERSTAND + REPLY_REQUEST_LAST_NAME;
@@ -103,7 +102,7 @@ public class RegisterService extends AbstractRegistrationService<User> {
                 user.setEmail(textMessage);
                 // validate the email
                 if (customerService.validate(user)) {
-                    nextStateCode = RegistrationStep.STATE_REGISTER_CONFIRM_EMAIL;
+                    registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_CONFIRM_EMAIL);
                     if ("none".equalsIgnoreCase(textMessage)) {
                         returnString = REPLY_EMAIL_NONE;
                     } else {
@@ -117,26 +116,25 @@ public class RegisterService extends AbstractRegistrationService<User> {
                 switch (textMessage){
             		case "2":
             			user.setEmail(null);
-                        nextStateCode = RegistrationStep.STATE_REGISTER_GET_EMAIL;
+                        registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_GET_EMAIL);
                         returnString = REPLY_EMAIL_REQUEST;
                         break;
             		case "1":
-            			nextStateCode = RegistrationStep.STATE_REGISTER_GET_AUTH_CODE;
+                        registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_GET_AUTH_CODE);
                         returnString = REPLY_AUTHCODE_REQUEST;
                         break;
             		default:
-            			nextStateCode= RegistrationStep.STATE_REGISTER_CONFIRM_EMAIL;
+                        registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_CONFIRM_EMAIL);
             			returnString = String.format(REPLY_EMAIL_CONFIRM, user.getEmail());
             			break;
-            	}          		
-                
+            	}
                 break;
             case STATE_REGISTER_GET_AUTH_CODE:
                 if (activationCodeService.validate(textMessage)) {
                     customerService.save(user);
                     //we are sure that text message is a long at this point
                     customerService.registerCustomer(user, textMessage);
-                    nextStateCode = RegistrationStep.STATE_REGISTER_MORE_AUTH_CODES;
+                    registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_MORE_AUTH_CODES);
                     returnString = REPLY_REGISTRATION_COMPLETE + REPLY_AUTHCODE_ADDITIONAL;
                 } else {
                     returnString = String.format(REPLY_AUTHCODE_INVALID, textMessage); 
@@ -157,6 +155,7 @@ public class RegisterService extends AbstractRegistrationService<User> {
                 returnString = REPLY_EXCEPTION_START_OVER;
                 break;
         }
-        return new WorkFlowStepResult(returnString, nextStateCode, serialize(user));
+        registrationState.setPayload(serialize((user)));
+        return returnString;
     }
 }

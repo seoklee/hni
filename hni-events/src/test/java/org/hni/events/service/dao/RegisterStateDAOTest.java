@@ -12,7 +12,7 @@ import javax.inject.Inject;
 import javax.transaction.Transactional;
 
 import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations={"classpath:test-applicationContext.xml"})
@@ -26,7 +26,12 @@ public class RegisterStateDAOTest {
 
     @Test
     public void testGetByPhoneNumber() {
-        RegistrationState initState = new RegistrationState(null, EventName.REGISTER, PHONE_NUMBER, null, RegistrationStep.STATE_REGISTER_START);
+        RegistrationState initState = RegistrationState.create(
+            EventName.REGISTER,
+            PHONE_NUMBER,
+            null,
+            RegistrationStep.STATE_REGISTER_START);
+
         registrationStateDAO.insert(initState);
 
         RegistrationState result = registrationStateDAO.getByPhoneNumber(PHONE_NUMBER);
@@ -39,52 +44,18 @@ public class RegisterStateDAOTest {
         assertEquals(result.getRegistrationStep(), initState.getRegistrationStep());
     }
 
-
-    @Test
-    public void testUpdate() {
-        RegistrationState initState = new RegistrationState(null,
-            EventName.REGISTER, PHONE_NUMBER,null,
-            RegistrationStep.STATE_REGISTER_START);
-
-        registrationStateDAO.insert(initState);
-
-        RegistrationState updated =  new RegistrationState(initState.getId(),
-            initState.getEventName(), initState.getPhoneNumber(), "hello",
-            RegistrationStep.STATE_REGISTER_GET_FIRST_NAME);
-
-        registrationStateDAO.update(updated);
-
-        RegistrationState result = registrationStateDAO.getByPhoneNumber(PHONE_NUMBER);
-
-        assertNotNull(result);
-        assertEquals(result.getId(), initState.getId());
-        assertEquals(result.getEventName(), initState.getEventName());
-        assertEquals(result.getPhoneNumber(), initState.getPhoneNumber());
-        assertEquals(result.getPayload(), "hello");
-        assertEquals(RegistrationStep.STATE_REGISTER_GET_FIRST_NAME, result.getRegistrationStep());
-    }
-
     @Test
     public void testDeleteByPhoneNumber() {
-        RegistrationState initState = new RegistrationState(null,
-            EventName.REGISTER, PHONE_NUMBER,null,
+        RegistrationState initState = RegistrationState.create(
+            EventName.REGISTER,
+            PHONE_NUMBER,
+            null,
             RegistrationStep.STATE_REGISTER_START);
 
         registrationStateDAO.insert(initState);
-
-        RegistrationState updated =  new RegistrationState(initState.getId(),
-            initState.getEventName(), initState.getPhoneNumber(), "hello",
-            RegistrationStep.STATE_REGISTER_GET_FIRST_NAME);
-
-        registrationStateDAO.update(updated);
-
+        registrationStateDAO.deleteByPhoneNumber(PHONE_NUMBER);
         RegistrationState result = registrationStateDAO.getByPhoneNumber(PHONE_NUMBER);
 
-        assertNotNull(result);
-        assertEquals(result.getId(), initState.getId());
-        assertEquals(result.getEventName(), initState.getEventName());
-        assertEquals(result.getPhoneNumber(), initState.getPhoneNumber());
-        assertEquals(result.getPayload(), "hello");
-        assertEquals(RegistrationStep.STATE_REGISTER_GET_FIRST_NAME, result.getRegistrationStep());
+        assertNull(result);
     }
 }
