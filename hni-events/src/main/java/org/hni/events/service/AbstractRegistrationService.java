@@ -16,7 +16,7 @@ import java.io.IOException;
  * Created by walmart on 11/14/16.
  * Handles Registration events.
  */
-public abstract class AbstractRegistrationService<T> implements EventService{
+public abstract class AbstractRegistrationService<T> implements EventService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRegistrationService.class);
 
@@ -29,26 +29,18 @@ public abstract class AbstractRegistrationService<T> implements EventService{
         RegistrationState state = registrationStateDAO.getByPhoneNumber(event.getPhoneNumber());
         if (state == null) {
             // No state, so we're just beginning.
-            state = new RegistrationState(null, EventName.REGISTER, event.getPhoneNumber(),
-                    null, RegistrationStep.STATE_REGISTER_START);
+            state = RegistrationState.create(EventName.REGISTER, event.getPhoneNumber(),
+                null, RegistrationStep.STATE_REGISTER_START);
             registrationStateDAO.insert(state);
         }
         LOGGER.info("Handling {} at state {} in {} flow", event, state.getRegistrationStep().getStateCode(),
                 state.getEventName().name());
 
         // perform the workflow logic
-        final WorkFlowStepResult stepResult = performWorkFlowStep(event, state);
-
-        if (!state.getRegistrationStep().equals(stepResult.getNextStateCode())) {
-            final RegistrationState nextState =
-                    new RegistrationState(state.getId(), state.getEventName(), state.getPhoneNumber(),
-                            stepResult.getPayload(), stepResult.getNextStateCode());
-            registrationStateDAO.update(nextState);
-        }
-        return stepResult.getReturnString();
+        return performWorkFlowStep(event, state);
     }
 
-    protected abstract WorkFlowStepResult performWorkFlowStep(Event event, RegistrationState currentState);
+    protected abstract String performWorkFlowStep(Event event, RegistrationState currentState);
 
     protected T deserialize(final String payload, final Class<T> clazz) {
         try {
@@ -69,30 +61,5 @@ public abstract class AbstractRegistrationService<T> implements EventService{
     @Inject
     public void setRegistrationStateDAO(final RegistrationStateDAO registrationStateDAO) {
         this.registrationStateDAO = registrationStateDAO;
-    }
-
-    protected static class WorkFlowStepResult {
-
-        private String returnString;
-        private RegistrationStep nextStateCode;
-        private String payload;
-
-        public WorkFlowStepResult(String returnString, RegistrationStep nextStateCode, String payload) {
-            this.returnString = returnString;
-            this.nextStateCode = nextStateCode;
-            this.payload = payload;
-        }
-
-        public String getReturnString() {
-            return returnString;
-        }
-
-        public RegistrationStep getNextStateCode() {
-            return nextStateCode;
-        }
-
-        public String getPayload() {
-            return payload;
-        }
     }
 }

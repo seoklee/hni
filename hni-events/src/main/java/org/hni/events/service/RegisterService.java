@@ -34,16 +34,15 @@ public class RegisterService extends AbstractRegistrationService<User> {
     }
 
     @Override
-    protected WorkFlowStepResult performWorkFlowStep(final Event event, final RegistrationState registrationState) {
+    protected String performWorkFlowStep(final Event event, final RegistrationState registrationState) {
         final String returnString;
-        RegistrationStep nextStateCode = registrationState.getRegistrationStep();
         final User user =
                 registrationState.getPayload() != null ? deserialize(registrationState.getPayload(), User.class) : new User();
         final String textMessage = event.getTextMessage();
         switch (RegistrationStep.fromStateCode(registrationState.getRegistrationStep().getStateCode())) {
             case STATE_REGISTER_START:
                 user.setMobilePhone(event.getPhoneNumber());
-                nextStateCode = RegistrationStep.STATE_REGISTER_GET_FIRST_NAME;
+                registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_GET_FIRST_NAME);
                 returnString = "Welcome to Hunger Not Impossible! Msg & data rates may apply. "
                         + "Information you provide will be kept private. "
                         + "Reply with PRIVACY to learn more. Let's get you registered. What's your first name?";
@@ -53,7 +52,7 @@ public class RegisterService extends AbstractRegistrationService<User> {
                     user.setFirstName(textMessage);
                     // validate the first name
                     if (customerService.validate(user)) {
-                        nextStateCode = RegistrationStep.STATE_REGISTER_GET_LAST_NAME;
+                        registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_GET_LAST_NAME);
                         returnString = "Thanks " + textMessage + ". What's your last name?";
                     } else {
                         returnString = "We didn't get that. Please send your first name again.";
@@ -68,7 +67,7 @@ public class RegisterService extends AbstractRegistrationService<User> {
                 user.setLastName(textMessage);
                 // validate the last name
                 if (customerService.validate(user)) {
-                    nextStateCode = RegistrationStep.STATE_REGISTER_GET_EMAIL;
+                    registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_GET_EMAIL);
                     returnString = "Lastly, I'd like to get your email address "
                             + "to verify your account in case you text me from a new "
                             + "number. Type 'none' if you "
@@ -81,7 +80,7 @@ public class RegisterService extends AbstractRegistrationService<User> {
                 user.setEmail(textMessage);
                 // validate the email
                 if (customerService.validate(user)) {
-                    nextStateCode = RegistrationStep.STATE_REGISTER_CONFIRM_EMAIL;
+                    registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_CONFIRM_EMAIL);
                     if ("none".equalsIgnoreCase(textMessage)) {
                         returnString = "Okay! You don't have an email address. "
                                 + "Is that correct? Reply 1 for yes and 2 for no";
@@ -97,26 +96,25 @@ public class RegisterService extends AbstractRegistrationService<User> {
                 switch (textMessage){
             		case "2":
             			user.setEmail(null);
-                        nextStateCode = RegistrationStep.STATE_REGISTER_GET_EMAIL;
+                        registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_GET_EMAIL);
                         returnString = "So what's your email address?";
                         break;
             		case "1":
-            			nextStateCode = RegistrationStep.STATE_REGISTER_GET_AUTH_CODE;
+                        registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_GET_AUTH_CODE);
                         returnString = "Please enter the 6 digit authorization code provided to you for this program.";
                         break;
             		default:
-            			nextStateCode= RegistrationStep.STATE_REGISTER_CONFIRM_EMAIL;
+                        registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_CONFIRM_EMAIL);
             			returnString="Invalid Response - Reply 1 for yes and 2 for no to confirm your email address";
             			break;
-            	}          		
-                
+            	}
                 break;
             case STATE_REGISTER_GET_AUTH_CODE:
                 if (activationCodeService.validate(textMessage)) {
                     customerService.save(user);
                     //we are sure that text message is a long at this point
                     customerService.registerCustomer(user, textMessage);
-                    nextStateCode = RegistrationStep.STATE_REGISTER_MORE_AUTH_CODES;
+                    registrationState.setRegistrationStep(RegistrationStep.STATE_REGISTER_MORE_AUTH_CODES);
                     returnString = "Ok. You're all set up for yourself. If you have family"
                             + " members to register please enter the additional authorization"
                             + " codes now, one at a time. When you need a meal just text MEAL back to this number.";
@@ -142,6 +140,7 @@ public class RegisterService extends AbstractRegistrationService<User> {
                 returnString = "Oops, an error occured. Please start over again.";
                 break;
         }
-        return new WorkFlowStepResult(returnString, nextStateCode, serialize(user));
+        registrationState.setPayload(serialize((user)));
+        return returnString;
     }
 }
