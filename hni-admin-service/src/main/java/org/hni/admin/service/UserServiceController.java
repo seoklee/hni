@@ -81,6 +81,7 @@ public class UserServiceController extends AbstractBaseController {
 		if (isPermitted(Constants.ORGANIZATION, Constants.DELETE, id)) {
 			User user = new User(id);
 			Organization org = new Organization(orgId);
+			Role role = Role.get(roleId);
 			orgUserService.delete(user, org, Role.get(roleId));
 			return "OK";
 		}
@@ -98,7 +99,11 @@ public class UserServiceController extends AbstractBaseController {
 		if (isPermitted(Constants.ORGANIZATION, Constants.UPDATE, id)) {
 			User user = new User(id);
 			Organization org = new Organization(orgId);
-			return orgUserService.associate(user, org, Role.get(roleId));
+			Role role = Role.get(roleId);
+			if ( null != user && null != org && null != role) {
+				return orgUserService.associate(user, org, Role.get(roleId));
+			}
+			throw new HNIException("One of the ID's you sent was invalid...");
 		}
 		throw new HNIException("You must have elevated permissions to do this.");
 	}
