@@ -267,7 +267,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
 			}
 	 		// Set next phase to confirm order
 	 		order.setTransactionPhase(TransactionPhase.CONFIRM_OR_REDO);
-	 		output = REPLY_CONFIRM_ORDER;
+	 		output = String.format(REPLY_CONFIRM_ORDER, menuItem.getName(), menuItem.getName());
     	}
 		partialOrderDAO.save(order);
 		return output;
