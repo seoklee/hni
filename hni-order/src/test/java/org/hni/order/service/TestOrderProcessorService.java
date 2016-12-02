@@ -47,4 +47,14 @@ public class TestOrderProcessorService {
 		Assert.assertFalse(orderService.maxDailyOrdersReached(user));
 	}
 
+	@Test
+	public void testStatusOnCompletedOrder() {
+		User user = new User();
+		logger.debug("Running test");
+		user.setId(11L);
+
+		String message = orderProcessor.processMessage(user, "STATUS");
+		logger.debug(message);
+	
+	}
 }
