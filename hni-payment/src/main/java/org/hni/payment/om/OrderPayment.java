@@ -34,6 +34,10 @@ public class OrderPayment implements Serializable, Persistable {
 		this.createdDatetime = createdDatetime;
 	}
 
+	@Override
+	public String toString() {
+		return String.format("OrderPayment: orderId:%d, cardId:%d, amount:%.2f ", id.getOrder().getId(), id.getPaymentInstrument().getId(), amount);
+	}
 	public OrderPayment(Order order, PaymentInstrument paymentInstrument, Double amount, User user) {
 		this(new OrderPaymentPK(order, paymentInstrument), amount, user.getId(), new Date());
 	}

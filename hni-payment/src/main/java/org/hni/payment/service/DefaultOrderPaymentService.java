@@ -106,11 +106,12 @@ public class DefaultOrderPaymentService extends AbstractService<OrderPayment> im
 				amountNeeded = amountNeeded.subtract(amountToDispense);
 				
 				OrderPayment orderPayment = new OrderPayment(order, paymentInstrument, amountToDispense.doubleValue(), user);
+				logger.info("Dispensing payment "+orderPayment);
 				orderPayments.add(orderPayment);
 
 				paymentInstrument.setLastUsedDatetime(new Date());
 				paymentInstrumentDao.save(paymentInstrument);
-				
+				logger.info("Still need "+amountNeeded.doubleValue());
 				if ( amountNeeded.doubleValue() <= 0 ) {
 					break;
 				}
@@ -148,7 +149,7 @@ public class DefaultOrderPaymentService extends AbstractService<OrderPayment> im
 	}
 	
 	private boolean totalAmountRequestedExceedsTotal(Order order, Collection<OrderPayment> orderPayments) {
-		Double total = 1.25*addOrderAmount(order); // add 25%
+		Double total = addOrderAmount(order); 
 		Double totalPrevPayments = fromCache(order);
 		
 		double paymentTotal = totalPrevPayments + orderPayments.stream().mapToDouble(o -> o.getAmount()).sum();
@@ -156,8 +157,8 @@ public class DefaultOrderPaymentService extends AbstractService<OrderPayment> im
 		toCache(order, paymentTotal);
 		
 		 
-		logger.info(String.format("Order amount = $%.2f (+25%%) and total payments dispensed = $%.2f", total, paymentTotal ));
-		return (paymentTotal > total);
+		logger.info(String.format("Order amount = $%.2f and total payments dispensed = $%.2f", total, paymentTotal ));
+		return (paymentTotal > (1.25*total));
 	}
 
 	private String orderPaymentsKey(Order order) {
@@ -169,6 +170,7 @@ public class DefaultOrderPaymentService extends AbstractService<OrderPayment> im
 		try {
 			RBucket<Double> bucket = lockingService.getNativeClient().getBucket(orderPaymentsKey(order));
 			bucket.set(paymentTotal, 2*DEFAULT_CARD_LOCKOUT_MINS, TimeUnit.MINUTES);
+			logger.info(String.format("Caching OrderPayment:%s with %.2f", orderPaymentsKey(order),paymentTotal));
 		} catch(Exception e) {
 			// log it and move on
 			logger.warn("Unable to push orderPayments into cache for "+orderPaymentsKey(order));
