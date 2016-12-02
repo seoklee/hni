@@ -20,7 +20,7 @@ public class TestOrderProcessorService {
 	private OrderService orderService;
 
 	@Inject
-	private DefaultOrderProcessor orderProcessor;
+	private OrderProcessor orderProcessor;
 
 	@Test
 	public void maxOrdersReached() {
