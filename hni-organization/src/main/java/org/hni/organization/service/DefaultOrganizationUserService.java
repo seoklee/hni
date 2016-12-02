@@ -93,9 +93,6 @@ public class DefaultOrganizationUserService extends DefaultUserService implement
 	public Collection<Organization> get(User user) {
 		Collection<Organization> orgs = new HashSet<>();
 		for (UserOrganizationRole uor : uorDao.get(user)) {
-			if (uor.getId().getRoleId().equals(Constants.SUPER_USER)) {
-				return orgService.getAll();
-			}
 			orgs.add(orgService.get(uor.getId().getOrgId()));
 		}
 		return orgs;
