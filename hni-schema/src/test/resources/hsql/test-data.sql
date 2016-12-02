@@ -11,6 +11,7 @@ insert into users values(7, 'VOLUNTEER1', 'voliunteer', 'F', '123-456-7830', '' 
 insert into users values(8, 'VOLUNTEER2', 'voliunteer', 'F', '123-456-7830', '' ,0, '', '', now(), '0');
 insert into users values(9, 'Client', 'HasExceededOrders', 'F', '123-456-7830', '' ,0, '', '', now(), '0');
 insert into users values(10, 'Client', 'HasMoreOrders', 'F', '123-456-7830', '' ,0, '', '', now(), '0');
+insert into users values(11, 'Privacy', 'Hogg', 'M', '123-456-7830', '' ,0, '', '', now(), '0');
 
 
 truncate table organizations;
@@ -35,6 +36,7 @@ insert into user_organization_role values(7, 3, 3);
 insert into user_organization_role values(8, 3, 3);
 insert into user_organization_role values(9, 2, 7);
 insert into user_organization_role values(10, 2, 7);
+insert into user_organization_role values(11, 2, 7);
 
 truncate table menus;
 truncate table menu_items;
@@ -50,12 +52,13 @@ insert into orders values(2, 2, 1, now(), now(), null, 9.95, 1.20, 1, 1);
 insert into orders values(3, 2, 1, now(), now(), null, 9.95, 1.20, 1, 1);
 insert into orders values(4, 9, 1, dateadd('HOUR', -8, current_date), now(), null, 9.95, 1.20, 1, 1);
 insert into orders values(5, 10, 1, dateadd('HOUR', -8, current_date), now(), null, 9.95, 1.20, 1, 1);
-
+insert into orders values(6, 11, 1, dateadd('HOUR', -8, current_date), now(), null, 9.95, 1.20, 1, 2);
 
 truncate table order_items;
 insert into order_items values(null, 1, 1, 1, 6.99);
 insert into order_items values(null, 2, 2, 1, 7.99);
 insert into order_items values(null, 2, 3, 1, 8.99);
+insert into order_items values(null, 6, 3, 1, 8.99);
 
 truncate table security_roles;
 insert into security_roles values(1,'Super User');
