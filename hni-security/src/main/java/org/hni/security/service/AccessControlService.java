@@ -8,6 +8,7 @@ import javax.inject.Inject;
 import org.hni.common.om.Role;
 import org.hni.organization.om.Organization;
 import org.hni.organization.om.UserOrganizationRole;
+import org.hni.organization.service.OrganizationService;
 import org.hni.organization.service.OrganizationUserService;
 import org.hni.security.dao.PermissionDAO;
 import org.hni.security.dao.RoleDAO;
@@ -25,13 +26,15 @@ public class AccessControlService {
 	private RolePermissionDAO rolePermissionDao;
 	private RoleDAO roleDao;
 	private PermissionDAO permissionDao;
+	private OrganizationService organizationService;
 	
 	@Inject
-	public AccessControlService(OrganizationUserService orgUserService, RolePermissionDAO rolePermissionDao, RoleDAO roleDao, PermissionDAO permissionDao) {
+	public AccessControlService(OrganizationUserService orgUserService, RolePermissionDAO rolePermissionDao, RoleDAO roleDao, PermissionDAO permissionDao, OrganizationService organizationService) {
 		this.orgUserService = orgUserService;
 		this.rolePermissionDao = rolePermissionDao;
 		this.roleDao = roleDao;
 		this.permissionDao = permissionDao;
+		this.organizationService = organizationService;
 	}
 	
 	public UserAccessControls getUserAccess(User user, Organization organization) {
@@ -39,8 +42,12 @@ public class AccessControlService {
 		
 		Collection<UserOrganizationRole> userOrganizationRoles = orgUserService.getUserOrganizationRoles(user);
 		for(UserOrganizationRole uor : userOrganizationRoles) {
-			if (uor.getId().getOrgId().equals(organization.getId())) {
-				Role role = roleDao.get(uor.getId().getRoleId());				
+			//if (uor.getId().getOrgId().equals(organization.getId())) {
+				Role role = roleDao.get(uor.getId().getRoleId());		
+				Organization org = organizationService.get(uor.getId().getOrgId());
+				if ( null == org ) { // hack
+					org = organization;
+				}
 				//userAccess.getRoles().add(role.getName());
 				userAccess.getRoles().add(role.getId().toString()); // UI wants ID's instead
 				// now get the map of permissions to this role
@@ -48,10 +55,10 @@ public class AccessControlService {
 				for(RolePermission rp : rolePermissions) {
 					Permission p = permissionDao.get(rp.getId().getPermissionId());
 					if (p.getDomain().equals("organizations") || p.getDomain().equals("*")) {
-						userAccess.getPermissions().add(createPermission(p.getDomain(), p.getValue(), organization.getId(), rp.isAllInstances()));
+						userAccess.getPermissions().add(createPermission(p.getDomain(), p.getValue(), org.getId(), rp.isAllInstances()));
 					}
 				}
-			}
+			//}
 		}
 		return userAccess;
 	}
