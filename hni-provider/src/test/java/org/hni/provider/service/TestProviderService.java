@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import javax.inject.Inject;
 
 import org.hni.provider.om.Provider;
+import org.hni.user.om.Address;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;

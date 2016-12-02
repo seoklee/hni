@@ -1,6 +1,6 @@
 package org.hni.user.om;
 
-import java.io.Serializable;
+import org.hni.common.om.Persistable;
 
 import javax.persistence.Basic;
 import javax.persistence.Column;
@@ -8,10 +8,9 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Index;
 import javax.persistence.Table;
 
-import org.hni.common.om.Persistable;
+import java.io.Serializable;
 
 /**
  * A physical or mailing address.  This object is used and mapped by various 
@@ -20,8 +19,7 @@ import org.hni.common.om.Persistable;
  *
  */
 @Entity
-@Table(name="addresses", indexes={@Index(columnList="longitude"), 
-        @Index(columnList="latitude")})
+@Table(name="addresses")
 public class Address implements Persistable, Serializable {
 
 	private static final long serialVersionUID = 435871577597384034L;

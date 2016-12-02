@@ -183,9 +183,7 @@ CREATE TABLE IF NOT EXISTS `addresses` (
   `longitude` DOUBLE NULL,
   `latitude` DOUBLE NULL,
   `timezone` VARCHAR(45) NULL,
-  PRIMARY KEY (`id`),
-  INDEX (`longitude`),
-  INDEX (`latitude`))
+  PRIMARY KEY (`id`))
 ENGINE = InnoDB;
 
 
