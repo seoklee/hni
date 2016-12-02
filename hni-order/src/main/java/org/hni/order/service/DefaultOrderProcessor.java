@@ -316,7 +316,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
             if (status.equals(OrderStatus.OPEN)) {
                 return REPLY_ORDER_PENDING;
             } else if (status.equals(OrderStatus.ORDERED)) {
-                return String.format(REPLY_ORDER_READY, order.get().getProviderLocation().getAddress().getAddress1(), order.get().getProviderLocation().getAddress().getCity());
+                return String.format(REPLY_ORDER_READY, order.get().getProviderLocation().getName(), order.get().getProviderLocation().getAddress().getAddress1(), order.get().getProviderLocation().getAddress().getCity());
             } else {
                 //TODO should we say anything for if they suspect an error
                 return REPLY_ORDER_CLOSED;
