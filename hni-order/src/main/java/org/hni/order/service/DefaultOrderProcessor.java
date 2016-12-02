@@ -144,7 +144,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
                 //this is chosen w/ provider for now
                 break;
             case MULTIPLE_ORDER:
-            	handleMultipleOrders(user, message, order);
+            	output = handleMultipleOrders(user, message, order);
             	break;
             case CONFIRM_OR_REDO:
                 return confirmOrContinueOrder(message, order);
