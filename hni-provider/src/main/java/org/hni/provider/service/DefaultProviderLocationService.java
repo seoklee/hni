@@ -13,9 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.Collections;
 
 @Service
-@Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+@Transactional(propagation = Propagation.REQUIRED)
 public class DefaultProviderLocationService extends AbstractService<ProviderLocation> implements ProviderLocationService {
 
 	private ProviderLocationDAO providerLocationDao;
@@ -42,7 +43,7 @@ public class DefaultProviderLocationService extends AbstractService<ProviderLoca
 		if (addrpoint != null) {
 			return providerLocationDao.providersNearCustomer(addrpoint, itemsPerPage);
 		} else {
-			throw new GeoCodingException("Unable to resolve address");
+			return Collections.emptyList();
 		}
 	}
 

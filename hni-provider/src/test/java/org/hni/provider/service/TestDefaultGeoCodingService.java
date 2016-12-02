@@ -24,4 +24,10 @@ public class TestDefaultGeoCodingService {
         Optional<Address> address = geoCodingService.resolveAddress("JJJeHHH");
         Assert.assertFalse(address.isPresent());
     }
+
+    @Test
+    public void invalidAddress2() {
+        Optional<Address> address = geoCodingService.resolveAddress("7273477383883884");
+        Assert.assertFalse(address.isPresent());
+    }
 }
