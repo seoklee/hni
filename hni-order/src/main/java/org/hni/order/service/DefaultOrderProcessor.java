@@ -69,7 +69,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
     
     public static String REPLY_NO_UNDERSTAND = "I don't understand that. Reply with MEAL to place an order.";
     public static String REPLY_INVALID_INPUT = "Invalid input! ";
-    public static String REPLY_EXCEPTION_REGISTER_FIRST = "Youll need to reply with REGISTER to sign up first.";
+    public static String REPLY_EXCEPTION_REGISTER_FIRST = "You will need to reply with REGISTER to sign up first.";
     public static String REPLY_MAX_ORDERS_REACHED = "You've reached the maximum number of orders for today. Please come back tomorrow.";
     
     @Inject
