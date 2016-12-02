@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
 public class DefaultOrderService extends AbstractService<Order> implements OrderService {
 	private static final Logger logger = LoggerFactory.getLogger(DefaultOrderService.class);
-	private static final Long DEFAULT_TIMEOUT = 60L; // 60 minutes
+	private static final Long DEFAULT_TIMEOUT = 20L; // lock orders for 15 minutes
 	private OrderDAO orderDao;
 	private LockingService lockingService;
 	private ActivationCodeService activationCodeService;

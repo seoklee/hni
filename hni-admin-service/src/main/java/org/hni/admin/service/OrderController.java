@@ -146,11 +146,11 @@ public class OrderController extends AbstractBaseController {
 		, response = Order.class
 		, responseContainer = "")
 	public void removeLock(@PathParam("id") Long id) {
-		if (isPermitted(Constants.ORDER, Constants.CREATE, 0L)) {
+		//if (isPermitted(Constants.ORDER, Constants.CREATE, 0L)) {
 			logger.info("Unlocking Order "+id);
 			orderService.releaseLock(orderService.get(id));
-		}
-		throw new HNIException("You must have elevated permissions to do this.");
+		//}
+		//throw new HNIException("You must have elevated permissions to do this.");
 	}
 
 	private static final String ORDER_COUNT = "{\"order-count\":\"%d\"}";

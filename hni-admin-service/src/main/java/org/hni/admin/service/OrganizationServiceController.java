@@ -85,4 +85,15 @@ public class OrganizationServiceController extends AbstractBaseController {
 		return orgUserService.get(user);
 	}
 
+	@GET
+	@Path("/all")
+	@Produces({MediaType.APPLICATION_JSON})
+	@ApiOperation(value = "Returns all organizations"
+	, notes = ""
+	, response = Organization.class
+	, responseContainer = "")
+	public Collection<Organization> getAll() {
+		return orgService.getAll();
+	}
+
 }
