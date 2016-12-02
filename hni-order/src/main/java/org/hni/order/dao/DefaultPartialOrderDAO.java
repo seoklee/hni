@@ -14,7 +14,7 @@ import java.util.List;
  * The DAO for PartialOrders
  */
 @Component
-public class DefaultPartialOrderDAO extends AbstractDAO {
+public class DefaultPartialOrderDAO extends AbstractDAO<PartialOrder> {
     public DefaultPartialOrderDAO() {
         super(PartialOrder.class);
     }

@@ -9,5 +9,5 @@ import org.hni.provider.om.ProviderLocation;
 public interface ProviderLocationService extends BaseService<ProviderLocation> {
 
 	Collection<ProviderLocation> with(Provider provider);
-	Collection<ProviderLocation> providersNearCustomer(String customerAddress, int itemsPerPage);
+	Collection<ProviderLocation> providersNearCustomer(String customerAddress, int itemsPerPage, double distance, double radius);
 }

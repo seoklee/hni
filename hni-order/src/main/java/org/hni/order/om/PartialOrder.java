@@ -1,9 +1,10 @@
 package org.hni.order.om;
 
-import org.hni.common.om.Persistable;
-import org.hni.provider.om.MenuItem;
-import org.hni.provider.om.ProviderLocation;
-import org.hni.user.om.User;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -17,11 +18,10 @@ import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import org.hni.common.om.Persistable;
+import org.hni.provider.om.MenuItem;
+import org.hni.provider.om.ProviderLocation;
+import org.hni.user.om.User;
 
 /**
  * Provides a state holder during ordering session.
@@ -61,7 +61,7 @@ public class PartialOrder implements Persistable, Serializable {
             joinColumns = @JoinColumn( name="id"),
             inverseJoinColumns = @JoinColumn( name="menu_item_id")
     )
-    private Set<MenuItem> menuItemsSelected;
+    private Collection<MenuItem> menuItemsSelected;
 
     @ManyToOne
     @JoinColumn(name="chosen_provider_id", referencedColumnName = "id")
@@ -76,7 +76,7 @@ public class PartialOrder implements Persistable, Serializable {
     public PartialOrder() {
         this.providerLocationsForSelection = new ArrayList<>();
         this.menuItemsForSelection = new ArrayList<>();
-        this.menuItemsSelected = new HashSet<>();
+        this.menuItemsSelected = new ArrayList<>();
     }
 
     @Override
@@ -136,7 +136,7 @@ public class PartialOrder implements Persistable, Serializable {
         this.address = address;
     }
 
-    public Set<MenuItem> getMenuItemsSelected() {
+    public Collection<MenuItem> getMenuItemsSelected() {
         return menuItemsSelected;
     }
 

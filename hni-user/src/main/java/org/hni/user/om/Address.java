@@ -8,6 +8,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.Table;
 
 import org.hni.common.om.Persistable;
@@ -19,7 +20,8 @@ import org.hni.common.om.Persistable;
  *
  */
 @Entity
-@Table(name="addresses")
+@Table(name="addresses", indexes={@Index(columnList="longitude"), 
+        @Index(columnList="latitude")})
 public class Address implements Persistable, Serializable {
 
 	private static final long serialVersionUID = 435871577597384034L;
@@ -35,8 +37,8 @@ public class Address implements Persistable, Serializable {
 	@Basic private String state;
 	@Basic private String zip;
 	@Basic private String timezone;
-	@Column(name="longitude") private String longitude;
-	@Column(name="latitude") private String latitude;
+	@Column(name="longitude") private Double longitude;
+	@Column(name="latitude") private Double latitude;
 	
 	public Address() {}
 	public Address(Long id) {
@@ -98,18 +100,16 @@ public class Address implements Persistable, Serializable {
 	public void setTimezone(String timezone) {
 		this.timezone = timezone;
 	}
-	public String getLongitude() {
-		return longitude;
-	}
-	public void setLongitude(String longitude) {
-		this.longitude = longitude;
-	}
-	public String getLatitude() {
-		return latitude;
-	}
-	public void setLatitude(String latitude) {
-		this.latitude = latitude;
-	}
-	
-	
+    public Double getLongitude() {
+        return longitude;
+    }
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+    public Double getLatitude() {
+        return latitude;
+    }
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
 }

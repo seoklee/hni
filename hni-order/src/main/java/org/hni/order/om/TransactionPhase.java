@@ -9,6 +9,7 @@ public enum TransactionPhase {
     PROVIDING_ADDRESS,
     CHOOSING_LOCATION,
     CHOOSING_MENU_ITEM,
-    CONFIRM_OR_REDO
+    CONFIRM_OR_REDO,
+    MULTIPLE_ORDER
 
 }

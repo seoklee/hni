@@ -1,7 +1,19 @@
 package org.hni.order.service;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+
 import org.apache.commons.lang.StringUtils;
-import org.hni.common.exception.HNIException;
 import org.hni.events.service.EventRouter;
 import org.hni.events.service.om.Event;
 import org.hni.events.service.om.EventName;
@@ -11,33 +23,18 @@ import org.hni.order.om.OrderItem;
 import org.hni.order.om.PartialOrder;
 import org.hni.order.om.TransactionPhase;
 import org.hni.order.om.type.OrderStatus;
-import org.hni.provider.om.GeoCodingException;
+import org.hni.provider.om.AddressException;
 import org.hni.provider.om.Menu;
 import org.hni.provider.om.MenuItem;
 import org.hni.provider.om.ProviderLocation;
 import org.hni.provider.service.ProviderLocationService;
+import org.hni.security.om.ActivationCode;
+import org.hni.security.service.ActivationCodeService;
 import org.hni.user.dao.UserDAO;
 import org.hni.user.om.User;
-import org.joda.time.DateTime;
-import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 public class DefaultOrderProcessor implements OrderProcessor {
@@ -57,6 +54,8 @@ public class DefaultOrderProcessor implements OrderProcessor {
 	public static String REPLY_ORDER_REQUEST_ADDRESS = "Reply with your location (e.g. #3 Smith St. 72758) or ENDMEAL to quit";
     public static String REPLY_PROVIDERS_UNAVAILABLE = "Providers currently unavailable. Reply with new location or try again later. Reply ENDMEAL to quit. ";
     public static String REPLY_NO_PROVIDERS = "There are no providers near your location. Reply with new location or ENDMEAL to quit.";
+    // In this flow, user chooses meal here : Reply 1) Ham sandwich 2) Tacos 3) Chicken Salad
+    public static String REPLY_MULTIPLE_ORDERS = "You can order up to %d meals. How many would you like?";
     public static String REPLY_CONFIRM_ORDER = "You've chosen %s at %s. Reply CONFIRM to place this order, REDO to try again or ENDMEAL to quit.";
     public static String REPLY_ORDER_COMPLETE = "Success! Order confirmed. Reply with STATUS after 5 minutes to check to status of your order.";
     public static String REPLY_NEED_VALID_RESPONSE = "Please respond with CONFIRM, REDO, or ENDMEAL";
@@ -64,7 +63,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
     public static String REPLY_ORDER_READY = "Your order has been placed and should be ready to pick up shortly from %s at %s %s.";
     public static String REPLY_ORDER_CLOSED = "Your order has been marked as closed.";
     public static String REPLY_ORDER_NOT_FOUND = "I can't find a recent order for you, please reply MEAL to place an order.";
-    
+
     public static String REPLY_ORDER_ITEM = "%d) %s from %s %s %s. ";
     public static String REPLY_ORDER_CHOICE = "Reply %s to choose your meal. ";
     
@@ -84,9 +83,20 @@ public class DefaultOrderProcessor implements OrderProcessor {
 
     @Inject
     private OrderService orderService;
+    @Inject
+    private ActivationCodeService activationCodeService;
 
     @Inject
     private EventRouter eventRouter;
+    
+    // TODO: @Value("${address.search.radius}")
+    private static final double RADIUS = 6371.01;
+    
+    // TODO: @Value("${address.search.distance}")
+    private static final double DISTANCE_IN_MILES = 10.0;
+    
+    // TODO: @Value("${address.search.itemsPerPage}")
+    private static final Integer ITEMS_PER_PAGE = 3;
 
     @PostConstruct
     void init() {
@@ -128,11 +138,14 @@ public class DefaultOrderProcessor implements OrderProcessor {
                 output = findNearbyMeals(message, order);
                 break;
             case CHOOSING_LOCATION:
-                output = chooseLocation(message, order);
+                output = chooseLocation(user, message, order);
                 break;
             case CHOOSING_MENU_ITEM:
                 //this is chosen w/ provider for now
                 break;
+            case MULTIPLE_ORDER:
+            	handleMultipleOrders(user, message, order);
+            	break;
             case CONFIRM_OR_REDO:
                 return confirmOrContinueOrder(message, order);
             default:
@@ -158,7 +171,8 @@ public class DefaultOrderProcessor implements OrderProcessor {
     private String findNearbyMeals(String addressString, PartialOrder order) {
         String output = "";
         try {
-            List<ProviderLocation> nearbyProviders = (ArrayList) locationService.providersNearCustomer(addressString, 3);
+            List<ProviderLocation> nearbyProviders = (ArrayList<ProviderLocation>) locationService.providersNearCustomer(addressString, 
+                    ITEMS_PER_PAGE, DISTANCE_IN_MILES, RADIUS);
             if (!nearbyProviders.isEmpty()) {
                 order.setAddress(addressString);
                 List<ProviderLocation> nearbyWithMenu = new ArrayList<>();
@@ -182,7 +196,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
             } else {
                 output = REPLY_NO_PROVIDERS;
             }
-        } catch (GeoCodingException e) {
+        } catch (AddressException e) {
             output = e.getMessage();
         }
 
@@ -190,7 +204,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
     }
 
 
-    private String chooseLocation(String message, PartialOrder order) {
+    private String chooseLocation(User user, String message, PartialOrder order) {
         String output = "";
         try {
             int index = Integer.parseInt(message);
@@ -202,8 +216,17 @@ public class DefaultOrderProcessor implements OrderProcessor {
             MenuItem chosenItem = order.getMenuItemsForSelection().get(index - 1);
             order.getMenuItemsSelected().add(chosenItem);
             logger.debug("Location {} has been chosen with item {}", location.getName(), chosenItem.getName());
-            order.setTransactionPhase(TransactionPhase.CONFIRM_OR_REDO);
-            output = String.format(REPLY_CONFIRM_ORDER, chosenItem.getName(), location.getName());
+            
+            // If this user has multiple auth codes we'll want to ask them how many of this item 
+            List<ActivationCode> activationCodes = activationCodeService.getByUser(user);
+            if (activationCodes.size() > 1) {
+                order.setTransactionPhase(TransactionPhase.MULTIPLE_ORDER);
+                output = String.format(REPLY_MULTIPLE_ORDERS, activationCodes.size());
+            }
+            else {
+	            order.setTransactionPhase(TransactionPhase.CONFIRM_OR_REDO);
+	            output = String.format(REPLY_CONFIRM_ORDER, chosenItem.getName(), location.getName());
+            }
         } catch (NumberFormatException | IndexOutOfBoundsException e) {
             output += REPLY_INVALID_INPUT;
             output += providerLocationMenuOutput(order);
@@ -211,6 +234,45 @@ public class DefaultOrderProcessor implements OrderProcessor {
         return output;
     }
 
+    private String handleMultipleOrders(User user, String message, PartialOrder order) {
+    	String output = "" ;
+    	
+    	int num;
+		try {
+			num = Integer.parseInt(message);
+		} catch (NumberFormatException e) {
+			// if they can't type in a valid number, set to ZERO and next phase is REDO
+			num = 0;
+		}
+    	
+    	List<ActivationCode> activationCodes = activationCodeService.getByUser(user);
+    	logger.debug("# activationCodes=" + activationCodes.size());
+    	if (num <= 0) {
+			logger.info("Reset order choices for PartialOrder {} by user request", order.getId());
+			//clear out previous choices
+			output = findNearbyMeals(order.getAddress(), order);
+    	}
+    	else {
+    		if (num > activationCodes.size()) {
+	    		// Too many - order them the maximum and move on
+    			logger.debug("User requested more meals than they have. Req=" + num + " actual=" + activationCodes.size());
+	    		num = activationCodes.size();
+    		}
+	 		Collection<MenuItem> menuItems = order.getMenuItemsSelected();
+			MenuItem menuItem = menuItems.iterator().next();
+			
+	 		for (int x=0; x < num-1; x++) {
+	 			logger.debug("Adding menuItem to partialOrder");
+				menuItems.add(menuItem);
+			}
+	 		// Set next phase to confirm order
+	 		order.setTransactionPhase(TransactionPhase.CONFIRM_OR_REDO);
+	 		output = REPLY_CONFIRM_ORDER;
+    	}
+		partialOrderDAO.save(order);
+		return output;
+
+    }
     private String confirmOrContinueOrder(String message, PartialOrder order) {
         String output = "";
         
@@ -221,7 +283,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
                 finalOrder.setOrderDate(new Date());
                 finalOrder.setProviderLocation(order.getChosenProvider());
                 //set items being ordered
-                Set<MenuItem> chosenItems = order.getMenuItemsSelected();
+                Collection<MenuItem> chosenItems = order.getMenuItemsSelected();
                 Set<OrderItem> orderedItems = chosenItems.stream().map(mItem -> new OrderItem(1L, mItem.getPrice(), mItem))
                         .collect(Collectors.toSet());
                 orderedItems.forEach(item -> item.setOrder(finalOrder));

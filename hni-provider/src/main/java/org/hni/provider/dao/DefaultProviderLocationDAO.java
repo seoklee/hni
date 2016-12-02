@@ -1,16 +1,16 @@
 package org.hni.provider.dao;
 
-import java.util.Collection;
-import java.util.Collections;
+import org.hni.common.dao.AbstractDAO;
+import org.hni.provider.om.LocationQueryParams;
+import org.hni.provider.om.Provider;
+import org.hni.provider.om.ProviderLocation;
+import org.springframework.stereotype.Component;
 
 import javax.persistence.NoResultException;
 import javax.persistence.Query;
 
-import org.hni.common.dao.AbstractDAO;
-import org.hni.provider.om.Provider;
-import org.hni.provider.om.ProviderLocation;
-import org.hni.user.om.Address;
-import org.springframework.stereotype.Component;
+import java.util.Collection;
+import java.util.Collections;
 
 @Component
 public class DefaultProviderLocationDAO extends AbstractDAO<ProviderLocation> implements ProviderLocationDAO {
@@ -30,34 +30,44 @@ public class DefaultProviderLocationDAO extends AbstractDAO<ProviderLocation> im
 		}
 	}
 
-	@Override
-	public Collection<ProviderLocation> providersNearCustomer(Address addr, int itemsPerPage) {
-		try {
+	
 
-			String queryString = new StringBuilder()
-					.append("SELECT pl.* FROM provider_locations pl ")
-					.append(" WHERE pl.address_id in ")
-					.append(" ( select new_addr.id from ")
-					.append(" ( SELECT adr.id, ")
-					.append(" ( 6371 * acos( ")
-					.append(" cos(radians(:latLkp)) * cos(radians(adr.latitude)) * cos(radians(adr.longitude) - radians(:longLkp)) + ")
-					.append(" sin(radians(:latLkp)) * sin(radians(adr.latitude)) ")
-					.append(" ) ) AS distance ")
-					.append(" FROM addresses adr ")
-					.append(" group by adr.id ")
-					.append(" HAVING distance < 10 ")
-					.append(" ORDER BY distance LIMIT :items ) as new_addr ) ")
-					.toString();
+    @Override
+    public Collection<ProviderLocation> providersNearCustomer(LocationQueryParams locationQuery) {
 
-			Query q = em.createNativeQuery(queryString, ProviderLocation.class)
-					.setParameter("longLkp", addr.getLongitude())
-					.setParameter("latLkp", addr.getLatitude())
-					.setParameter("items", itemsPerPage);
+        try {
 
-			return q.getResultList();
-		} catch(NoResultException e) {
-			return Collections.emptyList();
-		}
-	}
+            String queryString = new StringBuilder(
+                            "SELECT pl.* FROM provider_locations pl " +
+                            " WHERE pl.address_id in " +
+                            " ( select new_addr.id from " +
+                            " (SELECT id, " +
+                            " ( acos(sin(:custLatRad) * sin(radians(latitude)) + " +
+                            " cos(:custLatRad) * cos(radians(latitude)) * cos(radians(longitude) - :custLongRad))   ) as distance" +
+                    
+                            " FROM addresses " +
+                            " WHERE (latitude >= :minLatDeg AND latitude <= :maxLatDeg) AND (longitude >= :minLongDeg " +
+                            (locationQuery.isMeridian180WithinDistance() ? "OR" : "AND") +
+                            " longitude <= :maxLongDeg) "  +
+                            " group by id having distance <= :dist order by distance" +
+                            "   )" +
+                            "  as new_addr )")
+                    .toString();
+            
+
+            Query q = em.createNativeQuery(queryString, ProviderLocation.class)
+                    .setParameter("minLatDeg", locationQuery.getMinLattitudeDeg())  //minLat;
+                    .setParameter("maxLatDeg", locationQuery.getMaxLattitudeDeg())  //maxLat 
+                    .setParameter("minLongDeg", locationQuery.getMinLongitudeDeg()) //minLong
+                    .setParameter("maxLongDeg", locationQuery.getMaxLongitudeDeg()) //maxLong
+                    .setParameter("custLatRad", locationQuery.getCustomerLattitudeRad())   
+                    .setParameter("custLongRad", locationQuery.getCustomerLongitudeRad())
+                    .setParameter("dist", locationQuery.getDistnaceByRadius());
+
+            return q.getResultList();
+        } catch(NoResultException e) {
+            return Collections.emptyList();
+        }
+    }
 
 }

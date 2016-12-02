@@ -5,7 +5,7 @@ import org.hni.order.dao.DefaultPartialOrderDAO;
 import org.hni.order.om.Order;
 import org.hni.order.om.PartialOrder;
 import org.hni.order.om.TransactionPhase;
-import org.hni.provider.om.GeoCodingException;
+import org.hni.provider.om.AddressException;
 import org.hni.provider.om.Menu;
 import org.hni.provider.om.MenuItem;
 import org.hni.provider.om.Provider;
@@ -153,7 +153,8 @@ public class TestDefaultOrderProcessorService {
         partialOrder.setTransactionPhase(TransactionPhase.PROVIDING_ADDRESS);
 
         Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
-        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt()))
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble(),
+                Mockito.anyDouble()))
                 .thenReturn(providerLocationList);
 
         // Execute
@@ -178,8 +179,9 @@ public class TestDefaultOrderProcessorService {
         partialOrder.setTransactionPhase(TransactionPhase.PROVIDING_ADDRESS);
 
         Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
-        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt()))
-                .thenThrow(new GeoCodingException("Unable to resolve address"));
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble(), 
+                Mockito.anyDouble()))
+                .thenThrow(new AddressException("Unable to resolve address"));
 
         // Execute
         String output = orderProcessor.processMessage(user, message);
@@ -301,7 +303,8 @@ public class TestDefaultOrderProcessorService {
         partialOrder.getMenuItemsSelected().add(menuItems.get(0));
 
         Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
-        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt()))
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble()
+                , Mockito.anyDouble()))
                 .thenReturn(providerLocationList);
         Date orderDate = new Date();
         // Execute
@@ -369,6 +372,116 @@ public class TestDefaultOrderProcessorService {
 
         // Verify
         Assert.assertEquals(DefaultOrderProcessor.REPLY_NO_UNDERSTAND, output);
+    }
+
+    @Test
+    public void processMessage_multipleOrders_Exact() {
+        // Setup
+    	User user = new User(); 
+    	
+        user.setId(10L);
+        partialOrder.setUser(user);
+        partialOrder.setTransactionPhase(TransactionPhase.MULTIPLE_ORDER);
+        partialOrder.setProviderLocationsForSelection(providerLocationList);
+        partialOrder.setMenuItemsForSelection(menuItems);
+        partialOrder.setAddress("home");
+        partialOrder.setChosenProvider(providerLocationList.get(1));       
+        partialOrder.getMenuItemsSelected().add(menuItems.get(0));
+         
+        Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble()
+                , Mockito.anyDouble()))
+                .thenReturn(providerLocationList);
+        Date orderDate = new Date();
+        // Execute
+        String message = "3";  // user requested 3 meals and has 3 activation codes
+        String output = orderProcessor.processMessage(user, message);
+        
+        // Expected output is meals were duplicated
+        logger.debug("PartialOrder #items=" + partialOrder.getMenuItemsSelected().size());
+        Assert.assertTrue((partialOrder.getMenuItemsSelected().size() == 3));
+    }
+
+    public void processMessage_multipleOrders_MoreThanAuthCodes() {
+        // Setup
+    	User user = new User(); 
+    	
+        user.setId(10L);
+        partialOrder.setUser(user);
+        partialOrder.setTransactionPhase(TransactionPhase.MULTIPLE_ORDER);
+        partialOrder.setProviderLocationsForSelection(providerLocationList);
+        partialOrder.setMenuItemsForSelection(menuItems);
+        partialOrder.setAddress("home");
+        partialOrder.setChosenProvider(providerLocationList.get(1));       
+        partialOrder.getMenuItemsSelected().add(menuItems.get(0));
+         
+        Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble()
+                , Mockito.anyDouble()))
+                .thenReturn(providerLocationList);
+        Date orderDate = new Date();
+        // Execute
+        String message = "5";  // user requested 5 meals and has 3 activation codes
+        String output = orderProcessor.processMessage(user, message);
+        
+        // Expected output is meals were duplicated
+        logger.debug("PartialOrder #items=" + partialOrder.getMenuItemsSelected().size());
+        Assert.assertTrue((partialOrder.getMenuItemsSelected().size() == 3));
+    }
+
+    public void processMessage_multipleOrders_LessThanAuthCodes() {
+        // Setup
+    	User user = new User(); 
+    	
+        user.setId(10L);
+        partialOrder.setUser(user);
+        partialOrder.setTransactionPhase(TransactionPhase.MULTIPLE_ORDER);
+        partialOrder.setProviderLocationsForSelection(providerLocationList);
+        partialOrder.setMenuItemsForSelection(menuItems);
+        partialOrder.setAddress("home");
+        partialOrder.setChosenProvider(providerLocationList.get(1));       
+        partialOrder.getMenuItemsSelected().add(menuItems.get(0));
+         
+        Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble()
+                , Mockito.anyDouble()))
+                .thenReturn(providerLocationList);
+        Date orderDate = new Date();
+        // Execute
+        String message = "1";  // user requested 5 meals and has 3 activation codes
+        String output = orderProcessor.processMessage(user, message);
+        
+        // Expected output is meals were duplicated
+        logger.debug("PartialOrder #items=" + partialOrder.getMenuItemsSelected().size());
+        Assert.assertTrue((partialOrder.getMenuItemsSelected().size() == 1));
+    }
+
+    @Test
+    public void processMessage_multipleOrders_InvalidNumber() {
+        // Setup
+    	User user = new User(); 
+    	
+        user.setId(10L);
+        partialOrder.setUser(user);
+        partialOrder.setTransactionPhase(TransactionPhase.MULTIPLE_ORDER);
+        partialOrder.setProviderLocationsForSelection(providerLocationList);
+        partialOrder.setMenuItemsForSelection(menuItems);
+        partialOrder.setAddress("home");
+        partialOrder.setChosenProvider(providerLocationList.get(1));       
+        partialOrder.getMenuItemsSelected().add(menuItems.get(0));
+         
+        Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble()
+                , Mockito.anyDouble()))
+                .thenReturn(providerLocationList);
+        Date orderDate = new Date();
+        // Execute
+        String message = "ONE";  // user sent invalid data and has 3 activation codes
+        String output = orderProcessor.processMessage(user, message);
+        
+        // Expected output is meals were duplicated
+        logger.debug("PartialOrder #items=" + partialOrder.getMenuItemsSelected().size());
+        Assert.assertTrue((partialOrder.getMenuItemsSelected().size() == 1));
     }
 
 }

@@ -34,7 +34,7 @@ public class DefaultActivationCodeDAO extends AbstractDAO<ActivationCode> implem
 	@Override
 	public List<ActivationCode> getByUser(User user) {
 		try {
-			Query q = em.createQuery("SELECT x FROM ActivationCode x WHERE x.user.id = :userId AND x.mealsRemaining > 0")
+			Query q = em.createQuery("SELECT x FROM ActivationCode x WHERE x.user.id = :userId AND x.mealsRemaining > 0 AND x.enabled = true")
 				.setParameter("userId", user.getId());
 			return q.getResultList();
 		} catch (NoResultException e) {

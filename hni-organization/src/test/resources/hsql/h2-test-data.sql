@@ -106,22 +106,33 @@ insert into activation_codes values(3, '123456', 2, 10, 10, 1, null, now(), null
 insert into activation_codes values(4, '987654', 2, 10, 10, 0, null, now(), null);
 
 truncate table addresses;
-insert into addresses values (1, 'subway corp addr', '1251 Phoenician way', '', 'columbus','oh','43240', '-82.98402279999999', '40.138686','etc');
-insert into addresses values (2, 'kfc corp addr', '10790 parkridge blvd', '', 'reston','va','20191', '-77.316008', '38.9455603','etc');
-insert into addresses values (3, 'wendys corp addr', '1251 Phoenician way', '', 'columbus','oh','43240', '-82.98402279999999', '40.138686','etc');
-insert into addresses values (4, 'subway #1 addr', '10790 parkridge blvd', '', 'columbus','oh','43240', '-82.98402279999999', '40.138686','etc');
-insert into addresses values (5, 'kfc #1 addr', '1251 Phoenician way', '', 'reston','va','20191', '-77.316008', '38.9455603','etc');
-insert into addresses values (6, 'wendys #1 addr', '1251 Phoenician way', '', 'columbus','oh','43240', '-82.98402279999999', '40.138686','etc');
+insert into addresses values (1, 'subway corp addr', '1251 Phoenician way', '', 'columbus','oh','43240', -82.98402279999999, 40.138686,'etc');
+insert into addresses values (2, 'kfc corp addr', '10790 parkridge blvd', '', 'reston','va','20191', -77.316008, 38.9455603,'etc');
+
+insert into addresses values (3, 'wendys corp addr', '1251 Phoenician way', '', 'columbus','oh','43240', -82.98402279999999, 40.138686,'etc');
+insert into addresses values (4, 'subway #1 addr', '10790 parkridge blvd', '', 'reston','va','20191', -77.316008, 38.9455603,'etc');
+
+insert into addresses values (5, 'kfc #1 addr', '1251 Phoenician way', '', 'columbus','oh','43240', -82.98402279999999, 40.138686,'etc');
+insert into addresses values (6, 'wendys #1 addr', '495 S State St', '', 'Westerville','oh','43081', -82.927133, 40.1132455,'etc');
+
+insert into addresses values (7, 'chipotle va#1 addr', '12152 Sunset Hills Rd', '', 'reston','va','20190', -77.36627829999999, 38.9548359,'etc');
+insert into addresses values (8, 'chipotle va#2 addr', '810 W Grace St', '', 'Richmond','va','23220', -77.449776, 37.5496799,'etc');
+insert into addresses values (9, 'chipotle va#3 addr', '9511 Liberia Ave', '', 'Manassas','va','20110', -77.448792, 38.749152,'etc');
 
 truncate table providers;
 insert into providers values(1, 'Subway', 1, 1, 'http://www.subway.com', now(), 1);
 insert into providers values(2, 'KFC', 2, 1, 'http://www.kfc.com', now(), 1);
 insert into providers values(3, 'Wendys', 3, 1, 'http://www.wendys.com', now(), 1);
+insert into providers values(4, 'Chipotle', 4, 1, 'http://www.chipotle.com', now(), 1);
 
 truncate table provider_locations;
 insert into provider_locations values(1, 'Subway #1', 1, 4, now(), 1);
 insert into provider_locations values(2, 'KFC #1', 2, 5, now(), 1);
 insert into provider_locations values(3, 'Wendy #1', 3, 6, now(), 1);
+
+insert into provider_locations values(4, 'chipotle va#reston', 4, 7, now(), 1);
+insert into provider_locations values(5, 'chipotle va#richmond', 4, 8, now(), 1);
+insert into provider_locations values(6, 'chipotle va#manassas', 4, 9, now(), 1);
 
 insert into payment_instruments values(1, 1, 'gift', '1000-0000-0000-0001','A', 10, 10, null, '1234');
 insert into payment_instruments values(2, 1, 'gift', '2000-0000-0000-0001','A', 10, 10, null, '1234');

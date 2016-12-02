@@ -181,12 +181,13 @@ CREATE TABLE IF NOT EXISTS `addresses` (
   `city` VARCHAR(45) NULL,
   `state` VARCHAR(2) NULL,
   `zip` VARCHAR(15) NULL,
-  `longitude` VARCHAR(45) NULL,
-  `latitude` VARCHAR(45) NULL,
+  `longitude` DOUBLE NULL,
+  `latitude` DOUBLE NULL,
   `timezone` VARCHAR(45) NULL,
-  PRIMARY KEY (`id`))
+  PRIMARY KEY (`id`),
+  INDEX (`longitude`),
+  INDEX (`latitude`))
 ENGINE = InnoDB;
-
 
 -- -----------------------------------------------------
 -- Table `activation_codes`
