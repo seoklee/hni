@@ -42,5 +42,8 @@ public class PaymentInfo {
 		this.amountUsed = amountUsed;
 	}
 
-	
+	@Override
+	public String toString() {
+		return String.format("PaymentInfo {orderId:%d, paymentInstrumentId:%d, amountUsed:$.%.2f}", orderId, paymentInstrumentId, amountUsed);
+	}
 }

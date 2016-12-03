@@ -15,7 +15,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
 	public Response toResponse(Exception e) {
 		logger.error("Unknown error has occurred "+e.getMessage(), e);
 		return Response.status(Response.Status.BAD_REQUEST).
-                entity(String.format("{\"message\":\"An unknown error occurred\"}"+e.getMessage())).
+                entity(String.format("{\"message\":\"An unknown error occurred: %s\"}",e.getMessage())).
                 type(MediaType.APPLICATION_JSON).
                 build();
 	}

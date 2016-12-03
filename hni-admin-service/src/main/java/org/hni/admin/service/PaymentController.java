@@ -99,6 +99,10 @@ public class PaymentController extends AbstractBaseController {
 		, response = Order.class
 		, responseContainer = "")
 	public String setPaymentInstrumentsForOrder(Set<PaymentInfo> paymentInfos) {
+		logger.info("Payments received");
+		for(PaymentInfo pi : paymentInfos){
+			logger.info("  - "+pi);
+		}
 		Order order = orderPaymentService.assignPayment(paymentInfos, getLoggedInUser());
 		logger.info(String.format("Marking order %d complete", order.getId()));
 		orderService.complete(order);
