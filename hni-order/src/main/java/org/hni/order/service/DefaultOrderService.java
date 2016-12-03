@@ -1,6 +1,7 @@
 package org.hni.order.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Date;
@@ -17,8 +18,6 @@ import org.hni.provider.om.Provider;
 import org.hni.security.om.ActivationCode;
 import org.hni.security.service.ActivationCodeService;
 import org.hni.user.om.User;
-import org.joda.time.DateTime;
-import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -169,26 +168,29 @@ public class DefaultOrderService extends AbstractService<Order> implements Order
 
 	/**
 	 * Determines if the user has reached the maximum number of daily orders.
+	 * Start looking for meals placed after midnight on the current day. This will count towards the day's meal total.
+	 * Currently, they can get 1 meal per associated activation code.
+	 * 1 activation code  = 1 meal  per day
+	 * 2 activation codes = 2 meals per day
 	 * @param user
 	 * @return
 	 */
 	@Override
 	public boolean maxDailyOrdersReached(User user) {
-		
 		List<ActivationCode> activeActivationCodes = activationCodeService.getByUser(user);
-    	DateTime startDate = DateTime.now().minus(Period.days(1));
-    	DateTime endDate = DateTime.now();
-     	
-    	logger.debug("startDate=" + startDate + " endDate=" + endDate);
-    	logger.debug("#codes=" + activeActivationCodes.size());
+		LocalDateTime startDate = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0); //.minus(Duration.ofHours(mealOffset));
+		LocalDateTime endDate = LocalDateTime.now();
+ 		
+		logger.debug("#codes=" + activeActivationCodes.size());
     	for(ActivationCode ac : activeActivationCodes) {
     		logger.debug(String.format("code=%s, mealsRemaining=%d", ac.getActivationCode(), ac.getMealsRemaining()));
     	}
     	
-    	Collection<Order> todaysOrders = orderDao.get(user, LocalDate.of(startDate.getYear(), startDate.getMonthOfYear(), startDate.getDayOfMonth()), LocalDate.of(endDate.getYear(), endDate.getMonthOfYear(), endDate.getDayOfMonth()));
+    	logger.debug("Getting orders for userId={} using startDate={} endDate={}", user.getId(), startDate, endDate);
+    	Collection<Order> todaysOrders = orderDao.get(user, startDate, endDate);
     	logger.debug("#orders=" + todaysOrders.size());
     	for(Order o : todaysOrders) {
-    		logger.debug(String.format("orderDate=%s", o.getOrderDate().toString()));
+    		logger.debug(o.toString());
     	}
     	
     	return (todaysOrders.size() >= activeActivationCodes.size());
@@ -201,9 +203,8 @@ public class DefaultOrderService extends AbstractService<Order> implements Order
 	 */
 	@Override
 	public boolean hasActiveActivationCodes(User user) {
-		logger.debug("hasActiveActivationCodes");
 		List<ActivationCode> list = activationCodeService.getByUser(user);
-		logger.debug("size=" + list.size());
+		logger.debug("hasActiveActivationCodes size=" + list.size());
 		return (list.size() > 0);
 	}
 }

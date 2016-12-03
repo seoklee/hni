@@ -12,7 +12,8 @@ insert into users values(8, 'VOLUNTEER2', 'voliunteer', 'F', '123-456-7830', '' 
 insert into users values(9, 'Client', 'HasExceededOrders', 'F', '123-456-7830', '' ,0, '', '', now(), '0');
 insert into users values(10, 'Client', 'HasMoreOrders', 'F', '123-456-7830', '' ,0, '', '', now(), '0');
 insert into users values(11, 'Privacy', 'Hogg', 'M', '123-456-7830', '' ,0, '', '', now(), '0');
-
+insert into users values(12, 'OrderedYesterday', 'OneAuthCode', 'M', '123-456-7830', '' ,0, '', '', now(), '0');
+insert into users values(13, 'OrderedRecently', 'OneAuthCode', 'M', '123-456-7830', '' ,0, '', '', now(), '0');
 
 truncate table organizations;
 insert into organizations values(1, 'Not Impossible', 'phone', 'ni@email.net', 'website', 'logo', now(), 1);
@@ -37,6 +38,8 @@ insert into user_organization_role values(8, 3, 3);
 insert into user_organization_role values(9, 2, 7);
 insert into user_organization_role values(10, 2, 7);
 insert into user_organization_role values(11, 2, 7);
+insert into user_organization_role values(12, 2, 7);
+insert into user_organization_role values(13, 2, 7);
 
 truncate table menus;
 truncate table menu_items;
@@ -50,9 +53,11 @@ truncate table orders;
 insert into orders values(1, 2, 1, now(), now(), null, 9.95, 1.20, 1, 1);
 insert into orders values(2, 2, 1, now(), now(), null, 9.95, 1.20, 1, 1);
 insert into orders values(3, 2, 1, now(), now(), null, 9.95, 1.20, 1, 1);
-insert into orders values(4, 9, 1, dateadd('HOUR', -8, current_date), now(), null, 9.95, 1.20, 1, 1);
-insert into orders values(5, 10, 1, dateadd('HOUR', -8, current_date), now(), null, 9.95, 1.20, 1, 1);
-insert into orders values(6, 11, 1, dateadd('HOUR', -8, current_date), now(), null, 9.95, 1.20, 1, 2);
+insert into orders values(4, 9, 1, dateadd('HOUR', -8, now()), now(), null, 9.95, 1.20, 1, 1);
+insert into orders values(5, 10, 1, dateadd('HOUR', -8, now()), now(), null, 9.95, 1.20, 1, 1);
+insert into orders values(6, 11, 1, dateadd('HOUR', -8, now()), now(), null, 9.95, 1.20, 1, 2);
+insert into orders values(7, 12, 1, dateadd('DAY', -1, now()), now(), null, 9.95, 1.20, 1, 2);
+insert into orders values(8, 13, 1, formatdatetime(now(), 'yyyy-MM-dd 11:30:00'), now(), null, 9.95, 1.20, 1, 2);
 
 truncate table order_items;
 insert into order_items values(null, 1, 1, 1, 6.99);
@@ -128,6 +133,8 @@ insert into activation_codes values(5, 'x1987654', 2, 10, 10, 1, 'test for no mo
 insert into activation_codes values(6, 'y1987654', 2, 10, 10, 1, 'test for more meals', now(), 10);
 insert into activation_codes values(7, 'z1987654', 2, 10, 10, 1, 'test for more meals', now(), 10);
 insert into activation_codes values(8, 'a1987654', 2, 10, 10, 1, 'test for more meals', now(), 10);
+insert into activation_codes values(9, 'OrderedYesterdayOneAuthCode', 2, 10, 10, 1, 'test for one meal a day', now(), 12);
+insert into activation_codes values(10, 'OrderedRecentlyOneAuthCode', 2, 10, 10, 1, 'test for one meal a day', now(), 13);
 
 truncate table addresses;
 insert into addresses values (1, 'subway corp addr', '1251 Phoenician way', '', 'columbus','oh','43240', -82.98402279999999, 40.138686,'etc');

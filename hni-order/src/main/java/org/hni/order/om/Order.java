@@ -163,5 +163,12 @@ public class Order implements Persistable, Serializable {
 	public OrderStatus getOrderStatus() {
 		return OrderStatus.get(this.statusId);
 	}
+	@Override
+	public String toString() {
+		return "Order [id=" + id + ", orderDate=" + orderDate + ", readyDate=" + readyDate + ", pickupDate="
+				+ pickupDate + ", subTotal=" + subTotal + ", tax=" + tax + ", createdById=" + createdById
+				+ ", statusId=" + statusId + ", user=" + user + ", providerLocation=" + providerLocation
+				+ ", orderItems=" + orderItems + "]";
+	}
 	
 }
