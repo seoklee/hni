@@ -147,13 +147,13 @@ insert into addresses values (9, 'chipotle va#3 addr', '9511 Liberia Ave', '', '
 
 truncate table providers;
 insert into providers values(1, 'Subway', 1, 1, 'http://www.subway.com', now(), 1);
-insert into providers values(2, 'KFC', 2, 1, 'http://www.kfc.com', now(), 1);
-insert into providers values(3, 'Wendys', 3, 1, 'http://www.wendys.com', now(), 1);
+insert into providers values(2, 'Taco Bell', 1, 2, 'http://www.tacobell.com', now(), 1);
+insert into providers values(3, 'Chipolte', 1, 3, 'http://www.chipolte.com', now(), 1);
 
 truncate table provider_locations;
 insert into provider_locations values(1, 'Subway #1', 1, 4, now(), 1);
-insert into provider_locations values(2, 'KFC #1', 2, 5, now(), 1);
-insert into provider_locations values(3, 'Wendy #1', 3, 6, now(), 1);
+insert into provider_locations values(2, 'Taco Bell #1', 2, 5, now(), 1);
+insert into provider_locations values(3, 'Chipolte #1', 3, 6, now(), 1);
 
 insert into payment_instruments values(1, 1, 'gift', '1', '1000-0000-0000-0001','A', 10, 10, null, '1234');
 insert into payment_instruments values(2, 1, 'gift', '2', '2000-0000-0000-0001','A', 10, 10, null, '1234');
