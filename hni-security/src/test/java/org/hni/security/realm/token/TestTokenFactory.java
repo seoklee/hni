@@ -70,7 +70,7 @@ public class TestTokenFactory {
 
 	@Test
 	public void testElevatedToken() throws Exception {
-		String subject = "testtoken";
+		String subject = "test-issuer";
 		User user = new User(1L);
 		Organization organization = new Organization(2L);
 		UserAccessControls acl = accessControlService.getUserAccess(user, organization);
