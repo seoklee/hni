@@ -11,6 +11,7 @@ insert into users values(7, 'VOLUNTEER1', 'voliunteer', 'F', '123-456-7830', '' 
 insert into users values(8, 'VOLUNTEER2', 'voliunteer', 'F', '123-456-7830', '' ,0, '', '', now(), '0');
 insert into users values(9, 'Client', 'HasExceededOrders', 'F', '123-456-7830', '' ,0, '', '', now(), '0');
 insert into users values(10, 'Client', 'HasMoreOrders', 'F', '123-456-7830', '' ,0, '', '', now(), '0');
+insert into users values(11, 'Privacy', 'Hogg', 'M', '123-456-7830', '' ,0, '', '', now(), '0');
 
 
 truncate table organizations;
@@ -35,6 +36,7 @@ insert into user_organization_role values(7, 3, 3);
 insert into user_organization_role values(8, 3, 3);
 insert into user_organization_role values(9, 2, 7);
 insert into user_organization_role values(10, 2, 7);
+insert into user_organization_role values(11, 2, 7);
 
 truncate table menus;
 truncate table menu_items;
@@ -50,12 +52,13 @@ insert into orders values(2, 2, 1, now(), now(), null, 9.95, 1.20, 1, 1);
 insert into orders values(3, 2, 1, now(), now(), null, 9.95, 1.20, 1, 1);
 insert into orders values(4, 9, 1, dateadd('HOUR', -8, current_date), now(), null, 9.95, 1.20, 1, 1);
 insert into orders values(5, 10, 1, dateadd('HOUR', -8, current_date), now(), null, 9.95, 1.20, 1, 1);
-
+insert into orders values(6, 11, 1, dateadd('HOUR', -8, current_date), now(), null, 9.95, 1.20, 1, 2);
 
 truncate table order_items;
 insert into order_items values(null, 1, 1, 1, 6.99);
 insert into order_items values(null, 2, 2, 1, 7.99);
 insert into order_items values(null, 2, 3, 1, 8.99);
+insert into order_items values(null, 6, 3, 1, 8.99);
 
 truncate table security_roles;
 insert into security_roles values(1,'Super User');
@@ -144,20 +147,13 @@ insert into addresses values (9, 'chipotle va#3 addr', '9511 Liberia Ave', '', '
 
 truncate table providers;
 insert into providers values(1, 'Subway', 1, 1, 'http://www.subway.com', now(), 1);
-insert into providers values(2, 'KFC', 2, 1, 'http://www.kfc.com', now(), 1);
-insert into providers values(3, 'Wendys', 3, 1, 'http://www.wendys.com', now(), 1);
-insert into providers values(4, 'Chipotle', 4, 1, 'http://www.chipotle.com', now(), 1);
+insert into providers values(2, 'Taco Bell', 1, 2, 'http://www.tacobell.com', now(), 1);
+insert into providers values(3, 'Chipolte', 1, 3, 'http://www.chipolte.com', now(), 1);
 
 truncate table provider_locations;
 insert into provider_locations values(1, 'Subway #1', 1, 4, now(), 1);
-insert into provider_locations values(2, 'KFC #1', 2, 5, now(), 1);
-insert into provider_locations values(3, 'Wendy #1', 3, 6, now(), 1);
-
-insert into provider_locations values(4, 'chipotle va#reston', 4, 7, now(), 1);
-insert into provider_locations values(5, 'chipotle va#richmond', 4, 8, now(), 1);
-insert into provider_locations values(6, 'chipotle va#manassas', 4, 9, now(), 1);
-
-
+insert into provider_locations values(2, 'Taco Bell #1', 2, 5, now(), 1);
+insert into provider_locations values(3, 'Chipolte #1', 3, 6, now(), 1);
 
 insert into payment_instruments values(1, 1, 'gift', '1', '1000-0000-0000-0001','A', 10, 10, null, '1234');
 insert into payment_instruments values(2, 1, 'gift', '2', '2000-0000-0000-0001','A', 10, 10, null, '1234');
