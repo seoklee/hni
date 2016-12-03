@@ -39,7 +39,9 @@ import io.jsonwebtoken.MissingClaimException;
  */
 public class JWTTokenAuthenticatingFilter extends AuthenticatingFilter {
 	private static final Logger logger = LoggerFactory.getLogger(JWTTokenAuthenticatingFilter.class);
-
+	public static final String TOKEN_HEADER = "x-hni-token";
+	public static final String USER_AGENT = "user-agent";
+	
 	private String tokenIssuer;
 	private String tokenKey;
 	
@@ -56,10 +58,9 @@ public class JWTTokenAuthenticatingFilter extends AuthenticatingFilter {
 	@Override
 	protected AuthenticationToken createToken(ServletRequest request, ServletResponse response) throws Exception {
 		HttpServletRequest httpRequest = (HttpServletRequest) request;
-		String tokenValue = httpRequest.getHeader(UserTokenService.TOKEN_HEADER);
-		Enumeration<String> headerNames = httpRequest.getHeaderNames();
-		logger.info("ISSUER = "+tokenIssuer);
-		logger.info("validating token with " + tokenValue);
+		String tokenValue = httpRequest.getHeader(TOKEN_HEADER);
+		String userAgent = httpRequest.getHeader(USER_AGENT);
+		
 		try {
 			// if the token is valid we'll put the claims onto the ThreadLocal
 			// for processing by the TokenRealm
@@ -72,6 +73,7 @@ public class JWTTokenAuthenticatingFilter extends AuthenticatingFilter {
 
 			User user = userDao.get(userId);
 			if (null != user) {
+				logger.info("User[%d] %s %s, %s - User-Agent:%s "+user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(), userAgent);
 				logger.info(String.format("Found user %s for the token.  Authenticating...", user.getEmail()));
 				return new JWTAuthenticationToken(user.getEmail(), userId);
 			}
@@ -80,6 +82,8 @@ public class JWTTokenAuthenticatingFilter extends AuthenticatingFilter {
 			throw new AuthenticationException("the token is invalid; no user found");
 		} catch (MissingClaimException | IncorrectClaimException | ExpiredJwtException e) {
 			// let this fall through so the authN fails
+			logger.info("token issuer = "+tokenIssuer);
+			logger.error("      token = " + tokenValue);
 			logger.error("Not able to validate token due to " + e.getMessage());
 			throw new AuthenticationException("auth-token is missing, invalid or expired");
 		}
