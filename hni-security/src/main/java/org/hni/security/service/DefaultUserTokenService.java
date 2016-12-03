@@ -17,6 +17,7 @@ import org.hni.security.realm.token.JWTTokenFactory;
 import org.hni.user.om.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,11 +30,13 @@ public class DefaultUserTokenService implements UserTokenService {
 	
 	@Inject	private OrganizationUserService orgUserService;
 	@Inject	private RolePermissionService rolePermissionService;
+	@Value("#{hniProperties['token.issuer']}") private String tokenIssuer;
+	@Value("#{hniProperties['token.key']}") private String tokenKey;
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	public Claims getClaimsFromToken(String token) {
-		return JWTTokenFactory.decode(token, KEY, ISSUER);
+		return JWTTokenFactory.decode(token, tokenKey, tokenIssuer);
 	}
 
 	public Long getUserIdFromClaims(Claims claims) {
