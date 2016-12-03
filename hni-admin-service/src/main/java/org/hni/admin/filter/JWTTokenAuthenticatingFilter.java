@@ -73,7 +73,7 @@ public class JWTTokenAuthenticatingFilter extends AuthenticatingFilter {
 
 			User user = userDao.get(userId);
 			if (null != user) {
-				logger.info("User[%d] %s %s, %s - User-Agent:%s "+user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(), userAgent);
+				logger.info(String.format("User[%d] %s %s, %s - User-Agent:%s ", user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(), userAgent));
 				logger.info(String.format("Found user %s for the token.  Authenticating...", user.getEmail()));
 				return new JWTAuthenticationToken(user.getEmail(), userId);
 			}
