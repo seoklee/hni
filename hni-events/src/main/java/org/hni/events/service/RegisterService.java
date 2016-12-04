@@ -31,7 +31,7 @@ public class RegisterService extends AbstractRegistrationService<User> {
 
     public static String REPLY_NO_UNDERSTAND = "I didn't understand your last message. ";
     public static String REPLY_REQUEST_FIRST_NAME = "What's your first name?";
-    public static String REPLY_REQUEST_LAST_NAME =" Thanks %s. What's your last name?";
+    public static String REPLY_REQUEST_LAST_NAME ="Thanks %s. What's your last name?";
     public static String REPLY_REQUEST_EMAIL = "Lastly, I'd like to get your email address "
             + "to verify your account in case you text me from a new number. Reply '%s' if you don't have an email.";
 
