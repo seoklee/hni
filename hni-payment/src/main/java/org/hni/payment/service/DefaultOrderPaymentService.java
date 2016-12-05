@@ -90,11 +90,12 @@ public class DefaultOrderPaymentService extends AbstractService<OrderPayment> im
 		logger.info(String.format("Order[%d] total amount is $%.2f.  Requested amount is $%.2f", order.getId(), total, amount));
 		
 		// force the amount to be the max needed to finish the order payment.
+		
 		BigDecimal adjustedNeeded = BigDecimal.valueOf(total).subtract(BigDecimal.valueOf(alreadyRequestedAmount));
 		if (adjustedNeeded.doubleValue() > amountNeeded.doubleValue()) {
-			logger.info(String.format("Order[%d] total=$%.2f, alreadyRequestdPayments=$%.2f.  The amount needed $%.2f is greather than requested $%.2f, setting to greater value."
+			logger.info(String.format("Order[%d] total=$%.2f, alreadyRequestdPayments=$%.2f.  The amount needed $%.2f is greather than requested $%.2f..."
 					, order.getId(), total, alreadyRequestedAmount, adjustedNeeded, amount));
-			amountNeeded = adjustedNeeded;
+			// don't actually do the adjustment for launch amountNeeded = adjustedNeeded;
 		}
 		if (providerCards.size() == 0) {
 			logger.warn(String.format("There are no cards available for provider[%d] - %s", provider.getId(), provider.getName()));
