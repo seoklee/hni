@@ -118,11 +118,15 @@ public class DefaultOrderPaymentService extends AbstractService<OrderPayment> im
 			}
 		}
 		
+		// just doing the check for final launch, no lockouts
+		totalAmountRequestedExceedsTotal(order, orderPayments);
+		/*
 		if (totalAmountRequestedExceedsTotal(order, orderPayments)) {
 			logger.warn(String.format("You have requested more funds for order[%d] than you really need.  Shutting down this account...", order.getId()));
 			clearCache(order); // clear payment info so somebody else doesn't get locked out for the same issue
 			throw new PaymentsExceededException("You have requested more funds than you really need.  Shutting down this account...");
-		}		
+		}
+		*/		
 		return orderPayments;
 	}
 	
