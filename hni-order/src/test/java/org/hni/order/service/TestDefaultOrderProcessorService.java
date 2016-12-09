@@ -32,6 +32,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -103,6 +104,7 @@ public class TestDefaultOrderProcessorService {
 
         Address address = new Address();
         address.setAddress1("123 Main St");
+        address.setCity("Reston");
 
         ProviderLocation providerLocation = new ProviderLocation(1L);
         providerLocation.setName("Subway");
@@ -156,7 +158,8 @@ public class TestDefaultOrderProcessorService {
         partialOrder.setTransactionPhase(TransactionPhase.PROVIDING_ADDRESS);
 
         Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
-        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble(), Mockito.anyDouble()))
+        Mockito.when(providerLocationService.searchCustomerAddress(Mockito.anyString())).thenReturn(new Address());
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.any(Address.class), Mockito.anyInt(), Mockito.anyDouble(), Mockito.anyDouble()))
                 .thenReturn(providerLocationList);
 
         // Execute
@@ -175,18 +178,49 @@ public class TestDefaultOrderProcessorService {
     }
 
     @Test
-    public void processMessage_providingAddress_badLocation() {
+    public void processMessage_providingAddress_noLocationNearby() {
+        // Setup
+        String message = "5540 S Hyde Park Blvd, Chicago IL";
+        partialOrder.setTransactionPhase(TransactionPhase.PROVIDING_ADDRESS);
+
+        Address address = new Address();
+        address.setAddress1("5540 S Hyde Park Blvd");
+        address.setCity("Chicago");
+        address.setState("IL");
+        address.setZip("60637");
+
+        Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
+        Mockito.when(providerLocationService.searchCustomerAddress(Mockito.anyString())).thenReturn(address);
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.any(Address.class), Mockito.anyInt(), Mockito.anyDouble(), Mockito.anyDouble()))
+                .thenReturn(Collections.EMPTY_LIST);
+
+        // Execute
+        String output = orderProcessor.processMessage(user, message);
+        String expectedOutput = "There are no providers near your location "
+                + message
+                + ". Reply with new location or ENDMEAL to quit.";
+
+        // Verify
+        //Assert.assertEquals(expectedOutput, output);
+        ArgumentCaptor<PartialOrder> argumentCaptor = ArgumentCaptor.forClass(PartialOrder.class);
+        Mockito.verify(partialOrderDAO, Mockito.times(1)).save(argumentCaptor.capture());
+        Assert.assertEquals(TransactionPhase.PROVIDING_ADDRESS, argumentCaptor.getValue().getTransactionPhase());
+        Assert.assertTrue(argumentCaptor.getValue().getProviderLocationsForSelection().isEmpty());
+        Assert.assertTrue(argumentCaptor.getValue().getMenuItemsSelected().isEmpty());
+    }
+
+    @Test
+    public void processMessage_providingAddress_badAddress() {
         // Setup
         String message = "5540 S Hyde Park Blvd, Chicago IL, 60637";
         partialOrder.setTransactionPhase(TransactionPhase.PROVIDING_ADDRESS);
 
         Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
-        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble(), Mockito.anyDouble()))
-                .thenThrow(new GeoCodingException("Unable to resolve address"));
+        Mockito.when(providerLocationService.searchCustomerAddress(Mockito.anyString())).thenReturn(null);
 
         // Execute
         String output = orderProcessor.processMessage(user, message);
-        String expectedOutput = "Unable to resolve address";
+        String expectedOutput = "There seems to be a problem with your address. Please try again with street address, city, and State";
 
         // Verify
         Assert.assertEquals(expectedOutput, output);
@@ -229,7 +263,7 @@ public class TestDefaultOrderProcessorService {
 
         // Execute
         String output = orderProcessor.processMessage(user, message);
-        String expectedOutput = "Invalid input! Reply 1, 2 or 3 to choose your meal. 1) Food from Subway 123 Main St. 2) Food from McDonalds 123 Main St. 3) Food from Waffle House 123 Main St.";
+        String expectedOutput = "Invalid input! Reply 1, 2 or 3 to choose your meal. 1) Food from Subway 123 Main St Reston. 2) Food from McDonalds 123 Main St Reston. 3) Food from Waffle House 123 Main St Reston.";
 
         // Verify
         //Assert.assertEquals(expectedOutput, output);
@@ -304,17 +338,18 @@ public class TestDefaultOrderProcessorService {
         partialOrder.getMenuItemsSelected().add(menuItems.get(0));
 
         Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
-        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble(), Mockito.anyDouble()))
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.any(Address.class), Mockito.anyInt(), Mockito.anyDouble(), Mockito.anyDouble()))
                 .thenReturn(providerLocationList);
         Date orderDate = new Date();
         // Execute
         String output = orderProcessor.processMessage(user, message);
-        String expectedOutput = "Reply 1, 2 or 3 to choose your meal. 1) Food from Subway 123 Main St. 2) Food from McDonalds 123 Main St. 3) Food from Waffle House 123 Main St.";
+        String expectedOutput = "Reply 1, 2 or 3 to choose your meal. 1) Food from Subway 123 Main St Reston. 2) Food from McDonalds 123 Main St Reston. 3) Food from Waffle House 123 Main St Reston. ";
         // Verify
-        //Assert.assertEquals(expectedOutput, output);
+        Assert.assertEquals(expectedOutput, output);
         ArgumentCaptor<PartialOrder> argumentCaptor = ArgumentCaptor.forClass(PartialOrder.class);
         Mockito.verify(partialOrderDAO, Mockito.times(1)).save(argumentCaptor.capture());
         Assert.assertEquals(TransactionPhase.CHOOSING_LOCATION, argumentCaptor.getValue().getTransactionPhase());
+        Assert.assertTrue(argumentCaptor.getValue().getMenuItemsSelected().isEmpty());
     }
 
     @Test
@@ -394,7 +429,7 @@ public class TestDefaultOrderProcessorService {
         activationCodes.add(new ActivationCode());
         Mockito.when(activationCodeService.getByUser(user)).thenReturn(activationCodes);
         Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
-        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble()
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.any(Address.class), Mockito.anyInt(), Mockito.anyDouble()
                 , Mockito.anyDouble()))
                 .thenReturn(providerLocationList);
         Date orderDate = new Date();
@@ -421,7 +456,7 @@ public class TestDefaultOrderProcessorService {
         partialOrder.getMenuItemsSelected().add(menuItems.get(0));
 
         Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
-        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble()
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.any(Address.class), Mockito.anyInt(), Mockito.anyDouble()
                 , Mockito.anyDouble()))
                 .thenReturn(providerLocationList);
         Date orderDate = new Date();
@@ -448,7 +483,7 @@ public class TestDefaultOrderProcessorService {
         partialOrder.getMenuItemsSelected().add(menuItems.get(0));
 
         Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
-        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble()
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.any(Address.class), Mockito.anyInt(), Mockito.anyDouble()
                 , Mockito.anyDouble()))
                 .thenReturn(providerLocationList);
         Date orderDate = new Date();
@@ -476,7 +511,7 @@ public class TestDefaultOrderProcessorService {
         partialOrder.getMenuItemsSelected().add(menuItems.get(0));
 
         Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
-        Mockito.when(providerLocationService.providersNearCustomer(Mockito.anyString(), Mockito.anyInt(), Mockito.anyDouble()
+        Mockito.when(providerLocationService.providersNearCustomer(Mockito.any(Address.class), Mockito.anyInt(), Mockito.anyDouble()
                 , Mockito.anyDouble()))
                 .thenReturn(providerLocationList);
         Date orderDate = new Date();

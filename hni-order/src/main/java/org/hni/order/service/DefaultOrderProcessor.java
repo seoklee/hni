@@ -18,6 +18,7 @@ import org.hni.provider.service.ProviderLocationService;
 import org.hni.security.om.ActivationCode;
 import org.hni.security.service.ActivationCodeService;
 import org.hni.user.dao.UserDAO;
+import org.hni.user.om.Address;
 import org.hni.user.om.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,11 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-
+import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -50,12 +52,13 @@ public class DefaultOrderProcessor implements OrderProcessor {
     public static String MSG_CONFIRM = "CONFIRM";
     public static String MSG_REDO = "REDO";
 
-	public static String REPLY_NOT_CURRENTLY_ORDERING = "You're not currently ordering, please respond with MEAL to place an order.";
+    public static String REPLY_NOT_CURRENTLY_ORDERING = "You're not currently ordering, please respond with MEAL to place an order.";
     public static String REPLY_ORDER_CANCELLED = "You've cancelled your order.";
     public static String REPLY_ORDER_GET_STARTED = "Yes! Let's get started to order a meal for you. ";
-	public static String REPLY_ORDER_REQUEST_ADDRESS = "Reply with your location (e.g. #3 Smith St. 72758) or ENDMEAL to quit";
+    public static String REPLY_ORDER_REQUEST_ADDRESS = "Reply with your location (e.g. #3 Smith St. 72758) or ENDMEAL to quit";
     public static String REPLY_PROVIDERS_UNAVAILABLE = "Providers currently unavailable. Reply with new location or try again later. Reply ENDMEAL to quit. ";
-    public static String REPLY_NO_PROVIDERS = "There are no providers near your location. Reply with new location or ENDMEAL to quit.";
+    public static String REPLY_NO_LOCATION_FOUND = "There seems to be a problem with your address. Please try again with street address, city, and State";
+    public static String REPLY_NO_PROVIDERS_NEAR_BY = "There are no providers near your location {0}. Reply with new location or ENDMEAL to quit.";
     // In this flow, user chooses meal here : Reply 1) Ham sandwich 2) Tacos 3) Chicken Salad
     public static String REPLY_MULTIPLE_ORDERS = "You can order up to %d meals. How many would you like?";
     public static String REPLY_CONFIRM_ORDER = "You've chosen %s at %s. Reply CONFIRM to place this order, REDO to try again or ENDMEAL to quit.";
@@ -106,9 +109,9 @@ public class DefaultOrderProcessor implements OrderProcessor {
             return REPLY_NOT_CURRENTLY_ORDERING;
         } else if (order == null && !message.equalsIgnoreCase(MSG_STATUS)) {
 
-        	if (orderService.maxDailyOrdersReached(user)) {
-        		return REPLY_MAX_ORDERS_REACHED;
-        	}
+            if (orderService.maxDailyOrdersReached(user)) {
+                return REPLY_MAX_ORDERS_REACHED;
+            }
             order = new PartialOrder();
             order.setTransactionPhase(TransactionPhase.MEAL);
             order.setUser(user);
@@ -137,8 +140,8 @@ public class DefaultOrderProcessor implements OrderProcessor {
                 //this is chosen w/ provider for now
                 break;
             case MULTIPLE_ORDER:
-            	output = handleMultipleOrders(user, message, order);
-            	break;
+                output = handleMultipleOrders(user, message, order);
+                break;
             case CONFIRM_OR_REDO:
                 return confirmOrContinueOrder(message, order);
             default:
@@ -154,7 +157,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
 
     private String requestingMeal(User user, String request, PartialOrder order) {
         if (request.equalsIgnoreCase(MSG_MEAL) || request.equalsIgnoreCase(MSG_ORDER)) {
-        	order.setTransactionPhase(TransactionPhase.PROVIDING_ADDRESS);
+            order.setTransactionPhase(TransactionPhase.PROVIDING_ADDRESS);
             return REPLY_ORDER_GET_STARTED + REPLY_ORDER_REQUEST_ADDRESS;
         } else {
             return REPLY_NO_UNDERSTAND;
@@ -167,29 +170,40 @@ public class DefaultOrderProcessor implements OrderProcessor {
             // ### TODO: The last two arguments are no-ops right now. These are place holders for when the efficient geo-search
             // ### algorithm is brought back into play.
             // Github issue #58 - https://github.com/hungernotimpossible/hni/issues/58
-            Collection<ProviderLocation> nearbyProviders = locationService.providersNearCustomer(addressString, 3, 0, 0);
-            if (!nearbyProviders.isEmpty()) {
-                order.setAddress(addressString);
-                List<ProviderLocation> nearbyWithMenu = new ArrayList<>();
-                List<MenuItem> items = new ArrayList<>();
-                for (ProviderLocation location : nearbyProviders) {
-                    Optional<Menu> currentMenu = location.getProvider().getMenus().stream()
-                            .filter(menu -> isCurrent(menu)).findFirst();
-                    if (currentMenu.isPresent()) {
-                        nearbyWithMenu.add(location);
-                        items.add(currentMenu.get().getMenuItems().iterator().next());
-                    }
-                }
-                if (!nearbyWithMenu.isEmpty()) {
-                    order.setProviderLocationsForSelection(nearbyWithMenu);
-                    order.setMenuItemsForSelection(items);
-                    output += providerLocationMenuOutput(order);
-                    order.setTransactionPhase(TransactionPhase.CHOOSING_LOCATION);
-                } else {
-                    output = REPLY_PROVIDERS_UNAVAILABLE;
-                }
+            Address customerAddress = locationService.searchCustomerAddress(addressString);
+            if (customerAddress == null) {
+                output = REPLY_NO_LOCATION_FOUND;
             } else {
-                output = REPLY_NO_PROVIDERS;
+                Collection<ProviderLocation> nearbyProviders = locationService.providersNearCustomer(customerAddress, 3, 0, 0);
+                if (!nearbyProviders.isEmpty()) {
+                    order.setAddress(addressString);
+                    List<ProviderLocation> nearbyWithMenu = new ArrayList<>();
+                    List<MenuItem> items = new ArrayList<>();
+                    for (ProviderLocation location : nearbyProviders) {
+                        Optional<Menu> currentMenu = location.getProvider().getMenus().stream()
+                                .filter(menu -> isCurrent(menu)).findFirst();
+                        if (currentMenu.isPresent()) {
+                            nearbyWithMenu.add(location);
+                            items.add(currentMenu.get().getMenuItems().iterator().next());
+                        }
+                    }
+                    if (!nearbyWithMenu.isEmpty()) {
+                        order.setProviderLocationsForSelection(nearbyWithMenu);
+                        order.setMenuItemsForSelection(items);
+                        output += providerLocationMenuOutput(order);
+                        order.setTransactionPhase(TransactionPhase.CHOOSING_LOCATION);
+                    } else {
+                        output = REPLY_PROVIDERS_UNAVAILABLE;
+                    }
+                } else {
+                    String address = new StringBuilder().append(customerAddress.getAddress1())
+                            .append(StringUtils.isBlank(customerAddress.getAddress2()) ? ", " : " " + customerAddress.getAddress2() + ", ")
+                            .append(customerAddress.getCity())
+                            .append(" ")
+                            .append(customerAddress.getState())
+                            .toString();
+                    output = MessageFormat.format(REPLY_NO_PROVIDERS_NEAR_BY, address);
+                }
             }
         } catch (GeoCodingException e) {
             output = e.getMessage();
@@ -217,10 +231,9 @@ public class DefaultOrderProcessor implements OrderProcessor {
             if (activationCodes.size() > 1) {
                 order.setTransactionPhase(TransactionPhase.MULTIPLE_ORDER);
                 output = String.format(REPLY_MULTIPLE_ORDERS, activationCodes.size());
-            }
-            else {
-	            order.setTransactionPhase(TransactionPhase.CONFIRM_OR_REDO);
-	            output = String.format(REPLY_CONFIRM_ORDER, chosenItem.getName(), location.getName());
+            } else {
+                order.setTransactionPhase(TransactionPhase.CONFIRM_OR_REDO);
+                output = String.format(REPLY_CONFIRM_ORDER, chosenItem.getName(), location.getName());
             }
         } catch (NumberFormatException | IndexOutOfBoundsException e) {
             output += REPLY_INVALID_INPUT;
@@ -230,81 +243,80 @@ public class DefaultOrderProcessor implements OrderProcessor {
     }
 
     private String handleMultipleOrders(User user, String message, PartialOrder order) {
-    	String output = "" ;
+        String output = "";
 
-    	int num;
-		try {
-			num = Integer.parseInt(message);
-		} catch (NumberFormatException e) {
-			// if they can't type in a valid number, set to ZERO and next phase is REDO
-			num = 0;
-		}
+        int num;
+        try {
+            num = Integer.parseInt(message);
+        } catch (NumberFormatException e) {
+            // if they can't type in a valid number, set to ZERO and next phase is REDO
+            num = 0;
+        }
 
-    	List<ActivationCode> activationCodes = activationCodeService.getByUser(user);
-    	logger.debug("# activationCodes=" + activationCodes.size());
-    	if (num <= 0) {
-			logger.info("Reset order choices for PartialOrder {} by user request", order.getId());
-			//clear out previous choices
-			output = findNearbyMeals(order.getAddress(), order);
-    	}
-    	else {
-    		if (num > activationCodes.size()) {
-	    		// Too many - order them the maximum and move on
-    			logger.debug("User requested more meals than they have. Req=" + num + " actual=" + activationCodes.size());
-	    		num = activationCodes.size();
-    		}
-	 		Collection<MenuItem> menuItems = order.getMenuItemsSelected();
-			MenuItem menuItem = menuItems.iterator().next();
+        List<ActivationCode> activationCodes = activationCodeService.getByUser(user);
+        logger.debug("# activationCodes=" + activationCodes.size());
+        if (num <= 0) {
+            logger.info("Reset order choices for PartialOrder {} by user request", order.getId());
+            //clear out previous choices
+            output = findNearbyMeals(order.getAddress(), order);
+        } else {
+            if (num > activationCodes.size()) {
+                // Too many - order them the maximum and move on
+                logger.debug("User requested more meals than they have. Req=" + num + " actual=" + activationCodes.size());
+                num = activationCodes.size();
+            }
+            Collection<MenuItem> menuItems = order.getMenuItemsSelected();
+            MenuItem menuItem = menuItems.iterator().next();
 
-	 		for (int x=0; x < num-1; x++) {
-	 			logger.debug("Adding menuItem to partialOrder");
-				menuItems.add(menuItem);
-			}
-	 		// Set next phase to confirm order
-	 		order.setTransactionPhase(TransactionPhase.CONFIRM_OR_REDO);
-	 		output = String.format(REPLY_CONFIRM_ORDER, menuItem.getName(),order.getChosenProvider().getName());
-    	}
-		return output;
+            for (int x = 0; x < num - 1; x++) {
+                logger.debug("Adding menuItem to partialOrder");
+                menuItems.add(menuItem);
+            }
+            // Set next phase to confirm order
+            order.setTransactionPhase(TransactionPhase.CONFIRM_OR_REDO);
+            output = String.format(REPLY_CONFIRM_ORDER, menuItem.getName(), order.getChosenProvider().getName());
+        }
+        return output;
 
     }
+
     private String confirmOrContinueOrder(String message, PartialOrder order) {
         String output = "";
 
         if (message.equalsIgnoreCase(MSG_CONFIRM)) {
-                //create a final order and set initial info
-                Order finalOrder = new Order();
-                finalOrder.setUserId(order.getUser().getId());
-                finalOrder.setOrderDate(new Date());
-                finalOrder.setProviderLocation(order.getChosenProvider());
-                //set items being ordered
-                Collection<MenuItem> chosenItems = order.getMenuItemsSelected();
-                Set<OrderItem> orderedItems = chosenItems.stream().map(mItem -> new OrderItem(1L, mItem.getPrice(), mItem))
-                        .collect(Collectors.toSet());
-                orderedItems.forEach(item -> item.setOrder(finalOrder));
-                finalOrder.setOrderItems(orderedItems);
-                finalOrder.setSubTotal(orderedItems.stream().map(item -> (item.getAmount() * item.getQuantity())).reduce(0.0, Double::sum));
-                finalOrder.setStatus(OrderStatus.OPEN);
-                orderService.save(finalOrder);
-                partialOrderDAO.delete(order);
-                logger.info("Successfully created order {}", finalOrder.getId());
-                output = REPLY_ORDER_COMPLETE;
- 	    }
-        else if (message.equalsIgnoreCase(MSG_REDO)) {
-                 logger.info("Reset order choices for PartialOrder {} by user request", order.getId());
-                //clear out previous choices
-                output = findNearbyMeals(order.getAddress(), order);
-                //save here because I know caller won't
-                partialOrderDAO.save(order);
-        }
-        else {
-                output += REPLY_NEED_VALID_RESPONSE;
+            //create a final order and set initial info
+            Order finalOrder = new Order();
+            finalOrder.setUserId(order.getUser().getId());
+            finalOrder.setOrderDate(new Date());
+            finalOrder.setProviderLocation(order.getChosenProvider());
+            //set items being ordered
+            Collection<MenuItem> chosenItems = order.getMenuItemsSelected();
+            Set<OrderItem> orderedItems = chosenItems.stream().map(mItem -> new OrderItem(1L, mItem.getPrice(), mItem))
+                    .collect(Collectors.toSet());
+            orderedItems.forEach(item -> item.setOrder(finalOrder));
+            finalOrder.setOrderItems(orderedItems);
+            finalOrder.setSubTotal(orderedItems.stream().map(item -> (item.getAmount() * item.getQuantity())).reduce(0.0, Double::sum));
+            finalOrder.setStatus(OrderStatus.OPEN);
+            orderService.save(finalOrder);
+            partialOrderDAO.delete(order);
+            logger.info("Successfully created order {}", finalOrder.getId());
+            output = REPLY_ORDER_COMPLETE;
+        } else if (message.equalsIgnoreCase(MSG_REDO)) {
+            // reset selected menu items
+            order.setMenuItemSelected(Collections.EMPTY_SET);
+            // use the existing order address, provider location and menu data
+            output += providerLocationMenuOutput(order);
+            order.setTransactionPhase(TransactionPhase.CHOOSING_LOCATION);
+            partialOrderDAO.save(order);
+        } else {
+            output += REPLY_NEED_VALID_RESPONSE;
         }
         return output;
     }
 
     private String checkOrderStatus(User user) {
         Collection<Order> orders = orderService.get(user, LocalDate.now());
-        Optional<Order> order = orders.stream().sorted((a,b) -> b.getOrderDate().compareTo(a.getOrderDate())).findFirst();
+        Optional<Order> order = orders.stream().sorted((a, b) -> b.getOrderDate().compareTo(a.getOrderDate())).findFirst();
         if (order.isPresent()) {
             OrderStatus status = order.get().getOrderStatus();
             if (status.equals(OrderStatus.OPEN)) {
@@ -330,22 +342,22 @@ public class DefaultOrderProcessor implements OrderProcessor {
      */
     private String providerLocationMenuOutput(PartialOrder order) {
 
-    	// Note: spaces are significant in the Strings below!
-    	String options = "";
+        // Note: spaces are significant in the Strings below!
+        String options = "";
 
         String meals = "";
-        for (int i = 0; i < order.getProviderLocationsForSelection().size(); i ++) {
+        for (int i = 0; i < order.getProviderLocationsForSelection().size(); i++) {
             ProviderLocation location = order.getProviderLocationsForSelection().get(i);
-            options += (i+1) + ", ";
-            meals += String.format(REPLY_ORDER_ITEM, (i+1), order.getMenuItemsForSelection().get(i).getName(), location.getName(), location.getAddress().getAddress1() + (StringUtils.isNotEmpty(location.getAddress().getAddress2())?" " + location.getAddress().getAddress2():""), location.getAddress().getCity());
+            options += (i + 1) + ", ";
+            meals += String.format(REPLY_ORDER_ITEM, (i + 1), order.getMenuItemsForSelection().get(i).getName(), location.getName(), location.getAddress().getAddress1() + (StringUtils.isNotEmpty(location.getAddress().getAddress2()) ? " " + location.getAddress().getAddress2() : ""), location.getAddress().getCity());
         }
         // remove training comma and space
         options = options.substring(0, options.length() - 2);
 
         // if there's more than 1 option remove the last number, space and comma and replace with or #
         if (options.length() > 1) {
-        	options = options.substring(0, options.length() - 3 );
-        	options += " or " + order.getProviderLocationsForSelection().size();
+            options = options.substring(0, options.length() - 3);
+            options += " or " + order.getProviderLocationsForSelection().size();
         }
         return String.format(REPLY_ORDER_CHOICE, options) + meals;
     }

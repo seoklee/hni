@@ -1,9 +1,5 @@
 package org.hni.common;
 
-import org.apache.commons.validator.routines.EmailValidator;
-
-import javax.mail.internet.InternetAddress;
-
 /**
  * String utility class
  */
