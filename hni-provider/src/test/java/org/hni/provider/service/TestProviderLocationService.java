@@ -2,6 +2,7 @@ package org.hni.provider.service;
 
 import org.hni.provider.om.Provider;
 import org.hni.provider.om.ProviderLocation;
+import org.hni.user.om.Address;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
@@ -72,12 +73,24 @@ public class TestProviderLocationService {
 
 	}
 
-	//@Test
+	@Test
+	public void testGetCustomerAddress() throws Exception {
+		Address address = providerLocationService.searchCustomerAddress("bridle view way ohcolumbus");
+		assertNotNull(address);
+	}
+
+//	@Test
 	public void testGetProviderLocationByCustomerId() {
-		Collection<ProviderLocation> providerLocations = providerLocationService.providersNearCustomer("bridle view way ohcolumbus", 1, 0, 0);
+		Address address = new Address();
+		address.setAddress1("bridle view way");
+		address.setState("oh");
+		address.setCity("columbus");
+		address.setLatitude(-82.9834599);
+		address.setLongitude(40.1376158);
+		Collection<ProviderLocation> providerLocations = providerLocationService.providersNearCustomer(address, 3, 0, 0);
 		assertTrue(providerLocations.size() > 0);
 
-		providerLocations = providerLocationService.providersNearCustomer("reston town center reston va", 1, 0, 0);
-		assertTrue(providerLocations.size() > 0);
+//		providerLocations = providerLocationService.providersNearCustomer("reston town center reston va", 1, 0, 0);
+//		assertTrue(providerLocations.size() > 0);
 	}
 }
