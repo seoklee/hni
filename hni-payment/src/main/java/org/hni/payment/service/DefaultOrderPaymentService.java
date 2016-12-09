@@ -1,11 +1,10 @@
 package org.hni.payment.service;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
@@ -129,6 +128,40 @@ public class DefaultOrderPaymentService extends AbstractService<OrderPayment> im
 		}
 		*/		
 		return orderPayments;
+	}
+	
+	/**
+	 * Grab another payment method for an Order and return it.  If there are existing payments for an order
+	 * then set their balance to 0.
+	 * @param order
+	 * @param user
+	 * @return
+	 */
+	@Override
+	public Optional<OrderPayment> paymentFor(Order order, User user) throws PaymentsExceededException {
+		Provider provider = order.getProviderLocation().getProvider();
+		Collection<OrderPayment> existingPayments = paymentsFor(order);
+		BigDecimal totalAmount = BigDecimal.ZERO;
+		for(OrderPayment op : existingPayments) { // if the user is coming back for more payment, then assume any prior card is depleted of funds
+			totalAmount = totalAmount.add(BigDecimal.valueOf(op.getAmount()));
+			PaymentInstrument pi = op.getId().getPaymentInstrument();
+			if (pi.getBalance() > 0) {
+				pi.setBalance(0.0);
+				paymentInstrumentDao.save(pi);
+			}
+		}
+		Collection<PaymentInstrument> providerCards = paymentInstrumentDao.with(provider);
+		for(PaymentInstrument paymentInstrument : providerCards) {
+			if ( lockingService.acquireLock(lockingKey(paymentInstrument), DEFAULT_CARD_LOCKOUT_MINS)  ) {
+				logger.info("locking card "+lockingKey(paymentInstrument));
+				double amount = (totalAmount.doubleValue() == 0.0)?order.getSubTotal():1.0;
+				OrderPayment orderPayment = new OrderPayment(order, paymentInstrument, amount, user);
+				// associate this payment with the order before returning it
+				orderPaymentDao.save(orderPayment);
+				return Optional.of(orderPayment);
+			}
+		}
+		return Optional.empty();
 	}
 	
 	@Override

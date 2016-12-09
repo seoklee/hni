@@ -1,16 +1,19 @@
 package org.hni.admin.service;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.shiro.SecurityUtils;
@@ -51,6 +54,7 @@ import io.swagger.annotations.SwaggerDefinition;
 @Path("/payments")
 public class PaymentController extends AbstractBaseController {
 	private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
+	private static final String OK = "OK";
 	
 	@Inject private ProviderService providerService;
 	@Inject private OrderService orderService;
@@ -64,13 +68,14 @@ public class PaymentController extends AbstractBaseController {
 		, response = Order.class
 		, responseContainer = "")
 	public String getPaymentInstrumentsForProvider(@QueryParam("orderId") Long orderId, @QueryParam("providerId") Long providerId, @QueryParam("amount") Double amount) {
-		Provider provider = providerService.get(providerId);
+		//Provider provider = providerService.get(providerId);
 		Order order = orderService.get(orderId);
-		if ( null != order && null != provider ) {
+		if ( null != order ) {
 			Collection<OrderPayment> payments;
 			try {
-				payments = orderPaymentService.paymentFor(order, provider, amount, getLoggedInUser());
-				return serializeOrderPaymentToJson(payments);
+				//payments = orderPaymentService.paymentFor(order, provider, amount, getLoggedInUser());
+				Optional<OrderPayment> payment = orderPaymentService.paymentFor(order, getLoggedInUser());
+				return serializeOrderPaymentToJson(payment);
 			} catch (PaymentsExceededException e) {
 				// this exception indicates the user requested 25% more than the expected amount for the order.
 				// this will do an automatic lockout
@@ -90,6 +95,24 @@ public class PaymentController extends AbstractBaseController {
 		throw new HNIException("The provider specified is not valid", Status.NO_CONTENT);
 	}
 
+	@PUT
+	@Path("/order-payments/")
+	@Produces({MediaType.APPLICATION_JSON})
+	@Consumes({MediaType.APPLICATION_JSON})
+	@ApiOperation(value = "Returns a collection of payment instruments that can be used to pay for an order"
+		, notes = "encrypted"
+		, response = Order.class
+		, responseContainer = "")
+	public Response orderAndPaymentComplete(@QueryParam("orderId")Long id) {
+		Order order = orderService.get(id);
+		if ( null != order ) {
+			logger.info(String.format("Marking order %d complete", order.getId()));
+			orderService.complete(order);
+			return createResponse(OK);
+		}
+		throw new HNIException("Order does not exist.");
+	}
+	
 	@POST
 	@Path("/order-payments/")
 	@Produces({MediaType.APPLICATION_JSON})
@@ -98,7 +121,7 @@ public class PaymentController extends AbstractBaseController {
 		, notes = "encrypted"
 		, response = Order.class
 		, responseContainer = "")
-	public String setPaymentInstrumentsForOrder(Set<PaymentInfo> paymentInfos) {
+	public Response setPaymentInstrumentsForOrder(Set<PaymentInfo> paymentInfos) {
 		logger.info("Payments received");
 		for(PaymentInfo pi : paymentInfos){
 			logger.info("  - "+pi);
@@ -107,7 +130,7 @@ public class PaymentController extends AbstractBaseController {
 		logger.info(String.format("Marking order %d complete", order.getId()));
 		orderService.complete(order);
 		
-		return "{}";
+		return createResponse(OK);
 	}
 	
 	private String serializeOrderPaymentToJson(Collection<OrderPayment> orderPayments) {
@@ -126,9 +149,22 @@ public class PaymentController extends AbstractBaseController {
 		return "{}";
 	}
 	
-	private Double addOrderAmount(Order order) {
-		double total = order.getOrderItems().stream().mapToDouble(o -> o.getMenuItem().getPrice()).sum();
-		return total;
+	private String serializeOrderPaymentToJson(Optional<OrderPayment> orderPayment) {
+		if (orderPayment.isPresent()) {
+			try {
+				String json = mapper.writeValueAsString(JsonView.with(orderPayment.get())
+						.onClass(Order.class, Match.match().exclude("*").include("id", "subtotal"))
+						.onClass(User.class, Match.match().exclude("*").include("id", "firstName", "lastName"))
+						.onClass(ProviderLocation.class, Match.match().exclude("*"))
+						.onClass(ProviderLocationHour.class, Match.match().exclude("*").include("dow", "openHour", "closeHour"))
+						.onClass(Provider.class, Match.match().exclude("*").include("id", "name"))
+						.onClass(PaymentInstrument.class, Match.match().exclude("*").include("id", "cardNumber", "pinNumber")));
+				return json;
+			} catch (JsonProcessingException e) {
+				logger.error("Serializing User object:"+e.getMessage(), e);
+			}
+		}
+		return "{}";
 	}
 	
 }

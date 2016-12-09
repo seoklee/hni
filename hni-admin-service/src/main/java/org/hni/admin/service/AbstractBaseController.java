@@ -2,6 +2,8 @@ package org.hni.admin.service;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.util.ThreadContext;
@@ -44,5 +46,12 @@ public class AbstractBaseController {
     	return String.format("%s:%s:%d", domain, action, instance);
     }
 
-    
+    protected Response createResponse(String message, Response.Status status) {
+    	return Response.status(status).entity(String.format("{\"message\":\"%s\"}", message.toString())).type(MediaType.APPLICATION_JSON).build();
+    }
+
+    protected Response createResponse(String message) {
+    	return createResponse(message, Response.Status.OK);
+    }
+
 }
