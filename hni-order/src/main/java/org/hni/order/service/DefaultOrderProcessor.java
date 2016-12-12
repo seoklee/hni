@@ -304,6 +304,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
         } else if (message.equalsIgnoreCase(MSG_REDO)) {
             // reset selected menu items
             order.setMenuItemSelected(Collections.EMPTY_SET);
+            order.setChosenProvider(null);
             // use the existing order address, provider location and menu data
             output += providerLocationMenuOutput(order);
             order.setTransactionPhase(TransactionPhase.CHOOSING_LOCATION);
