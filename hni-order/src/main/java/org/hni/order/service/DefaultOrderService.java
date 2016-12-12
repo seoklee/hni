@@ -179,7 +179,7 @@ public class DefaultOrderService extends AbstractService<Order> implements Order
 	public boolean maxDailyOrdersReached(User user) {
 		List<ActivationCode> activeActivationCodes = activationCodeService.getByUser(user);
 		LocalDateTime startDate = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0); //.minus(Duration.ofHours(mealOffset));
-		LocalDateTime endDate = LocalDateTime.now();
+		LocalDateTime endDate = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59);  // set duration to be all all day
  		
 		logger.debug("#codes=" + activeActivationCodes.size());
     	for(ActivationCode ac : activeActivationCodes) {
