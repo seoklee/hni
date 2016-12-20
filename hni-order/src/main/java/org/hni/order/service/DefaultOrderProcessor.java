@@ -20,6 +20,10 @@ import org.hni.security.service.ActivationCodeService;
 import org.hni.user.dao.UserDAO;
 import org.hni.user.om.Address;
 import org.hni.user.om.User;
+import org.redisson.api.RRemoteService;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.RemoteInvocationOptions;
+import org.redisson.remote.RemoteServiceAckTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -30,20 +34,15 @@ import javax.inject.Inject;
 import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Component
 @Transactional
 public class DefaultOrderProcessor implements OrderProcessor {
 
-    private static Logger logger = LoggerFactory.getLogger(DefaultOrderProcessor.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(DefaultOrderProcessor.class);
 
     public static String MSG_ENDMEAL = "ENDMEAL";
     public static String MSG_STATUS = "STATUS";
@@ -76,6 +75,8 @@ public class DefaultOrderProcessor implements OrderProcessor {
     public static String REPLY_INVALID_INPUT = "Invalid input! ";
     public static String REPLY_EXCEPTION_REGISTER_FIRST = "You will need to reply with REGISTER to sign up first.";
     public static String REPLY_MAX_ORDERS_REACHED = "You've reached the maximum number of orders for today. Please come back tomorrow.";
+    private static final RemoteInvocationOptions REDISSON_REMOTE_INVOCATION_OPTION =
+            RemoteInvocationOptions.defaults().expectAckWithin(10, TimeUnit.SECONDS).noResult();
 
     @Inject
     private UserDAO userDao;
@@ -88,11 +89,15 @@ public class DefaultOrderProcessor implements OrderProcessor {
 
     @Inject
     private OrderService orderService;
+
     @Inject
     private ActivationCodeService activationCodeService;
 
     @Inject
     private EventRouter eventRouter;
+
+    @Inject
+    private LockingService<RedissonClient> redissonClient;
 
     @PostConstruct
     void init() {
@@ -224,7 +229,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
             order.setChosenProvider(location);
             MenuItem chosenItem = order.getMenuItemsForSelection().get(index - 1);
             order.getMenuItemsSelected().add(chosenItem);
-            logger.debug("Location {} has been chosen with item {}", location.getName(), chosenItem.getName());
+            LOGGER.debug("Location {} has been chosen with item {}", location.getName(), chosenItem.getName());
 
             // If this user has multiple auth codes we'll want to ask them how many of this item 
             List<ActivationCode> activationCodes = activationCodeService.getByUser(user);
@@ -254,22 +259,22 @@ public class DefaultOrderProcessor implements OrderProcessor {
         }
 
         List<ActivationCode> activationCodes = activationCodeService.getByUser(user);
-        logger.debug("# activationCodes=" + activationCodes.size());
+        LOGGER.debug("# activationCodes=" + activationCodes.size());
         if (num <= 0) {
-            logger.info("Reset order choices for PartialOrder {} by user request", order.getId());
+            LOGGER.info("Reset order choices for PartialOrder {} by user request", order.getId());
             //clear out previous choices
             output = findNearbyMeals(order.getAddress(), order);
         } else {
             if (num > activationCodes.size()) {
                 // Too many - order them the maximum and move on
-                logger.debug("User requested more meals than they have. Req=" + num + " actual=" + activationCodes.size());
+                LOGGER.debug("User requested more meals than they have. Req=" + num + " actual=" + activationCodes.size());
                 num = activationCodes.size();
             }
             Collection<MenuItem> menuItems = order.getMenuItemsSelected();
             MenuItem menuItem = menuItems.iterator().next();
 
             for (int x = 0; x < num - 1; x++) {
-                logger.debug("Adding menuItem to partialOrder");
+                LOGGER.debug("Adding menuItem to partialOrder");
                 menuItems.add(menuItem);
             }
             // Set next phase to confirm order
@@ -297,9 +302,10 @@ public class DefaultOrderProcessor implements OrderProcessor {
             finalOrder.setOrderItems(orderedItems);
             finalOrder.setSubTotal(orderedItems.stream().map(item -> (item.getAmount() * item.getQuantity())).reduce(0.0, Double::sum));
             finalOrder.setStatus(OrderStatus.OPEN);
-            orderService.save(finalOrder);
+            final Order savedOrder = orderService.save(finalOrder);
             partialOrderDAO.delete(order);
-            logger.info("Successfully created order {}", finalOrder.getId());
+            invokeRemoteOrderEventConsumer(savedOrder);
+            LOGGER.info("Successfully created order {}", finalOrder.getId());
             output = REPLY_ORDER_COMPLETE;
         } else if (message.equalsIgnoreCase(MSG_REDO)) {
             // reset selected menu items
@@ -379,6 +385,19 @@ public class DefaultOrderProcessor implements OrderProcessor {
         }
     }
 
+
+    private void invokeRemoteOrderEventConsumer(Order order) {
+        RRemoteService remoteService = redissonClient.getNativeClient().getRemoteService();
+        try {
+            // invoke the remote service
+            OrderEventConsumerAsync orderEventConsumer = remoteService.get(OrderEventConsumerAsync.class, REDISSON_REMOTE_INVOCATION_OPTION);
+            orderEventConsumer.process(order);
+        } catch (RemoteServiceAckTimeoutException ex) {
+            LOGGER.warn("Processing order confirm event for order {} ack timeout", order);
+            LOGGER.warn("Processing order confirm event throws RemoteServiceAckTimeoutException", ex);
+        }
+    }
+
     @Override
     public String handleEvent(Event event) {
 
@@ -391,7 +410,7 @@ public class DefaultOrderProcessor implements OrderProcessor {
             return processMessage(users.get(0), event.getTextMessage().trim());
         } else {
             String message = "OrderProcessor failed to lookup user by phone " + phoneNumber;
-            logger.error(message);
+            LOGGER.error(message);
             return REPLY_EXCEPTION_REGISTER_FIRST;
         }
     }

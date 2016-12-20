@@ -26,6 +26,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.redisson.api.RRemoteService;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.RemoteInvocationOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
@@ -43,7 +46,7 @@ import java.util.Set;
  * These test wil ONLY be testing faults from consumer input.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"classpath:test-applicationContext.xml"})
+@ContextConfiguration(locations = {"classpath:test-applicationContext.xml", "classpath:redis.ctx.xml"})
 public class TestDefaultOrderProcessorService {
     private static final Logger logger = LoggerFactory.getLogger(TestDefaultOrderProcessorService.class);
     @Mock
@@ -57,12 +60,15 @@ public class TestDefaultOrderProcessorService {
 
     @Mock
     private ActivationCodeService activationCodeService;
-    ;
+
     @Mock
     private MenuService menuService;
 
     @Mock
     private OrderService orderService;
+
+    @Mock
+    private RedisLockingService redissonClient;
 
     @InjectMocks
     private DefaultOrderProcessor orderProcessor;
@@ -285,6 +291,12 @@ public class TestDefaultOrderProcessorService {
 
         Mockito.when(partialOrderDAO.byUser(user)).thenReturn(partialOrder);
         Mockito.when(orderService.save(Mockito.any())).thenReturn(null);
+        RedissonClient client = Mockito.mock(RedissonClient.class);
+        Mockito.when(redissonClient.getNativeClient()).thenReturn(client);
+        RRemoteService remoteService = Mockito.mock(RRemoteService.class);
+        Mockito.when(client.getRemoteService()).thenReturn(remoteService);
+        Mockito.when(remoteService.get(Mockito.eq(OrderEventConsumerAsync.class), Mockito.any(RemoteInvocationOptions.class)))
+                .thenReturn(Mockito.mock(OrderEventConsumerAsync.class));
 
         Date orderDate = new Date();
         // Execute

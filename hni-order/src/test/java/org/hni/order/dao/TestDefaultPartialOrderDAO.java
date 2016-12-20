@@ -21,7 +21,7 @@ import java.util.Set;
  */
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations={"classpath:test-applicationContext.xml"} )
+@ContextConfiguration(locations={"classpath:test-applicationContext.xml", "classpath:redis.ctx.xml"} )
 @Transactional
 public class TestDefaultPartialOrderDAO {
 

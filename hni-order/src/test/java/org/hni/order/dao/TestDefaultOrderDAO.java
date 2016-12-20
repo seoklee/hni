@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations={"classpath:test-applicationContext.xml"} )
+@ContextConfiguration(locations={"classpath:test-applicationContext.xml", "classpath:redis.ctx.xml"} )
 @Transactional
 public class TestDefaultOrderDAO {
 
