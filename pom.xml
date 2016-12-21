@@ -5,7 +5,7 @@
     <groupId>org.hni</groupId>
     <artifactId>hni-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.1</version>
+    <version>1.2-SNAPSHOT</version>
     <name>Hunger Not Impossible</name>
     <url>http://www.hni.org</url>
     <scm>
