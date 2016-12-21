@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.hni</groupId>
 		<artifactId>hni-db-parent</artifactId>
-		<version>1.1-SNAPSHOT</version>
+		<version>1.1</version>
 		<relativePath>../hni-db-parent/pom.xml</relativePath>
 	</parent>
 	<artifactId>hni-security</artifactId>
